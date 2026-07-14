@@ -41,6 +41,12 @@ export const sectors = [
         description: 'Cutting-edge research in AI/ML technologies',
     },
     {
+        id: 'life-sciences',
+        name: 'Life Sciences & Biology',
+        icon: '🧬',
+        description: 'Computational biology, biophysics, and pattern-formation modeling',
+    },
+    {
         id: 'gis',
         name: 'GIS & Mapping',
         icon: '🗺️',

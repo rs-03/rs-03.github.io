@@ -3,6 +3,7 @@ const project = {
     title: 'Infrastructure Keypoint Detection',
     shortDescription: 'Fine-tuned transformer for precise keypoint extraction in utility infrastructure.',
     fullDescription: `Fine-tuned a transformer model on custom annotations for precise keypoint extraction in utility infrastructure images. Built automated error-analysis loops to continuously improve extraction reliability.`,
+    role: 'Computer Vision Engineer · annotation strategy, fine-tuning, and the error-analysis loop',
     category: 'professional',
     sector: 'utility',
     type: 'case-study',

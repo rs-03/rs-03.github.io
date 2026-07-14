@@ -7,7 +7,7 @@ const project = {
     sector: 'research',
     type: 'demo',
     status: 'live',
-    featured: true,
+    featured: false,
     techStack: ['MediaPipe', 'Computer Vision', 'WebAssembly', 'WebGL', 'React'],
     highlights: [
         '21 keypoints per hand at ~30 FPS',

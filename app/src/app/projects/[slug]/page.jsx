@@ -68,6 +68,15 @@ export default async function ProjectPage({ params }) {
                     </div>
 
                     <h1 className={styles.title}>{project.title}</h1>
+
+                    {/* Role & ownership */}
+                    {project.role && (
+                        <p className={styles.role}>
+                            <span className={styles.roleLabel}>My role</span>
+                            {project.role}
+                        </p>
+                    )}
+
                     <p className={styles.description}>{project.shortDescription}</p>
 
                     {/* Tech Stack */}

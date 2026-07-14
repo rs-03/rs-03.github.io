@@ -3,6 +3,7 @@ const project = {
     title: 'No-Code ML Platform',
     shortDescription: 'End-to-end ML platform enabling non-technical users to build and deploy models.',
     fullDescription: `Enterprise ML platform that democratizes machine learning, allowing non-technical users to build, train, and deploy models through an intuitive interface.`,
+    role: 'ML Platform Engineer · end-to-end build',
     category: 'professional',
     sector: 'enterprise',
     type: 'card',

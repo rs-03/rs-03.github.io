@@ -7,7 +7,7 @@ const project = {
     sector: 'research',
     type: 'demo',
     status: 'live',
-    featured: true,
+    featured: false,
     techStack: ['NumPy', 'Neural Networks', 'Quantization', 'JavaScript', 'React'],
     highlights: [
         'Trained from scratch, no TensorFlow, no PyTorch',

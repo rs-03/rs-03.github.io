@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { siteConfig } from '@/data/siteConfig';
 import NeuralField from './NeuralField';
 import TypedRoles from './TypedRoles';
+import LearningLive from './LearningLive';
 import styles from './Hero.module.css';
 
 /**
@@ -20,6 +21,7 @@ export default function Hero() {
             </div>
 
             <div className={`container ${styles.container}`}>
+                <div className={styles.heroGrid}>
                 <div className={styles.content}>
                     {/* Availability */}
                     {siteConfig.availability?.available && (
@@ -60,8 +62,12 @@ export default function Hero() {
                     {/* Live demo teaser */}
                     <Link href="/demos" className={styles.demoTeaser}>
                         <span className={styles.demoTeaserPulse} aria-hidden="true" />
-                        Five live AI demos run on this site. Try them →
+                        Fourteen more live AI demos on this site. Try them →
                     </Link>
+                </div>
+
+                {/* Live learning panel */}
+                <LearningLive />
                 </div>
             </div>
         </section>

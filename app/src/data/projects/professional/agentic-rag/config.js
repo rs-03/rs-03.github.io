@@ -3,6 +3,7 @@ const project = {
     title: 'Advanced Multimodal Agentic RAG',
     shortDescription: 'Enterprise RAG platform with multi-database connectivity enabling natural language data interaction.',
     fullDescription: `Advanced Retrieval-Augmented Generation system with agentic capabilities that connects to multiple enterprise data sources including Azure SQL, AWS S3, PostgreSQL, and more. Enables users to have natural conversations with their data across multiple databases and file systems using multimodal understanding.`,
+    role: 'AI/ML Engineer · system architecture and implementation',
     category: 'professional',
     sector: 'enterprise',
     type: 'case-study',

@@ -10,8 +10,8 @@
         font-family: 'Segoe UI', Arial, sans-serif;
         color: #1a1a2e;
         font-size: 9.8pt;
-        line-height: 1.38;
-        padding: 26pt 38pt;
+        line-height: 1.25;
+        padding: 16pt 34pt;
     }
     .header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2.5pt solid #7c6aef; padding-bottom: 8pt; }
     h1 { font-size: 21pt; font-weight: 800; letter-spacing: 0.5pt; }
@@ -20,13 +20,15 @@
     .contact a { color: #5b4bd1; text-decoration: none; }
     h2 {
         font-size: 10pt; text-transform: uppercase; letter-spacing: 1.4pt;
-        color: #7c6aef; margin: 10pt 0 4pt; border-bottom: 0.75pt solid #ddd; padding-bottom: 2pt;
+        color: #7c6aef; margin: 8pt 0 3pt; border-bottom: 0.75pt solid #ddd; padding-bottom: 2pt;
     }
     .summary { margin-top: 7pt; color: #333; }
     .nda { font-size: 8.6pt; color: #777; font-style: italic; margin-top: 3pt; }
-    .engagement { margin-bottom: 5pt; page-break-inside: avoid; }
-    .engagement h3 { font-size: 10.4pt; font-weight: 700; }
-    .engagement h3 span { font-weight: 500; color: #666; font-size: 9.2pt; }
+    .engagement { margin-bottom: 4pt; page-break-inside: avoid; }
+    .engagement h3 { font-size: 10.4pt; font-weight: 700; display: flex; justify-content: space-between; align-items: baseline; gap: 10pt; }
+    .engagement h3 .ctx { font-weight: 500; color: #666; font-size: 9.2pt; }
+    .engagement h3 .dur { font-weight: 600; color: #555; font-size: 9pt; white-space: nowrap; }
+    .engagement .role { color: #5b4bd1; font-weight: 600; font-size: 9.2pt; margin: 1.5pt 0 2pt; }
     ul { padding-left: 13pt; margin-top: 2pt; }
     li { margin-bottom: 1pt; color: #333; }
     b { color: #1a1a2e; }
@@ -35,7 +37,7 @@
     .skillrow .cat { flex: 0 0 118pt; font-weight: 700; font-size: 9.4pt; }
     .skillrow .items { color: #333; font-size: 9.4pt; }
     .edu { display: flex; justify-content: space-between; }
-    .footer-note { margin-top: 10pt; font-size: 8.6pt; color: #888; text-align: center; }
+    .footer-note { margin-top: 5pt; font-size: 8.6pt; color: #888; text-align: center; }
 </style>
 </head>
 <body>
@@ -63,35 +65,42 @@
     <h2>Selected Engagements</h2>
 
     <div class="engagement">
-        <h3>Fortune 500 Utility <span>· Computer Vision for Infrastructure</span></h3>
+        <h3><span>Fortune 500 Utility <span class="ctx">· Computer Vision for Infrastructure</span></span><span class="dur">4 months</span></h3>
+        <div class="role">Computer Vision Engineer &middot; owned model development, evaluation, and production deployment</div>
         <ul>
-            <li>Double-wood pole detection at <b>&gt;95% production accuracy</b> (PyTorch + custom rule engine), replacing manual field review of imagery</li>
-            <li>Fine-tuned transformer keypoint extraction for attachment heights and NESC clearance analysis, with automated error-analysis loops feeding failures back into training</li>
-            <li>Prompt-driven segmentation tooling (VLM + SAM2.1) accelerating annotation on complex pole and wire scenes</li>
+            <li><b>Built and deployed</b> a PyTorch detection model for double-wood poles, reaching <b>&gt;95% production accuracy</b> and replacing manual field review of imagery</li>
+            <li><b>Fine-tuned</b> a transformer for infrastructure keypoint extraction (attachment heights, NESC clearance) and <b>designed</b> automated error-analysis loops that fed failures back into training to lift extraction reliability</li>
+            <li><b>Developed</b> prompt-driven segmentation tooling (VLM + SAM2.1) that accelerated annotation throughput on complex pole-and-wire scenes</li>
         </ul>
     </div>
 
     <div class="engagement">
-        <h3>Major US Pharmacy Chain <span>· Gen-AI Operational Analytics</span></h3>
+        <h3><span>Major US Pharmacy Chain <span class="ctx">· Gen-AI Operational Analytics Platform</span></span><span class="dur">6 months</span></h3>
+        <div class="role">ML &amp; Full-Stack Engineer &middot; owned the end-to-end platform, from data pipeline to analytics UI</div>
         <ul>
-            <li>Gen-AI feature extraction over unstructured shipment records to isolate reshipment drivers, identifying an estimated <b>$20M+ in annual savings</b></li>
+            <li><b>Engineered</b> an ETL pipeline (PySpark on Databricks) that ingested and normalized millions of unstructured shipment records from a large operational database into a PostgreSQL analytical store</li>
+            <li><b>Designed</b> a Gen-AI feature-extraction layer over the consolidated data to isolate and rank the drivers behind costly reshipments</li>
+            <li><b>Built</b> a FastAPI backend and React dashboard to query, filter, and visualize those drivers, turning the analysis into an interactive tool for operations teams</li>
+            <li><b>Surfaced</b> an estimated <b>$20M+ in annual savings</b> from the resulting analysis</li>
         </ul>
     </div>
 
     <div class="engagement">
-        <h3>Enterprise AI Platforms <span>· LLM Systems &amp; ML Tooling</span></h3>
+        <h3><span>Enterprise AI Platforms <span class="ctx">· LLM Systems &amp; ML Tooling</span></span><span class="dur">12 months</span></h3>
+        <div class="role">AI/ML Engineer &middot; end-to-end design and implementation</div>
         <ul>
-            <li>Visual drag-and-drop AI workflow builder (React, Python, FastAPI) with no-code multi-step evaluation pipelines and automatic code generation</li>
-            <li>Multimodal agentic RAG across Azure SQL, AWS S3, and PostgreSQL (LangGraph) with retrieval evaluation, causal analysis, and self-tuning prompts</li>
-            <li>No-code ML platform (FastAPI, H2O, PySpark, Dask) and a transformer-based financial document intelligence engine (POs, invoices, P&amp;L, balance sheets)</li>
-            <li>Production AI evaluation frameworks: rubric-based scoring, trend detection, and structured error analysis for text-heavy workflows</li>
+            <li><b>Built</b> a visual drag-and-drop AI workflow builder (React, Python, FastAPI) with no-code multi-step evaluation pipelines and automatic code generation</li>
+            <li><b>Architected</b> a multimodal agentic RAG system across Azure SQL, AWS S3, and PostgreSQL (LangGraph), adding retrieval evaluation, causal analysis, and self-tuning prompts</li>
+            <li><b>Delivered</b> a no-code ML platform (FastAPI, H2O, PySpark, Dask) and a transformer-based financial document-intelligence engine for POs, invoices, P&amp;L, and balance sheets</li>
+            <li><b>Developed</b> production AI evaluation frameworks: rubric-based scoring, trend detection, and structured error analysis for text-heavy workflows</li>
         </ul>
     </div>
 
     <div class="engagement">
-        <h3>GIS / Government Planning <span>· Map Intelligence</span></h3>
+        <h3><span>GIS / Government Planning <span class="ctx">· Map Intelligence</span></span><span class="dur">2 months</span></h3>
+        <div class="role">Computer Vision Engineer &middot; pipeline design and delivery</div>
         <ul>
-            <li>Planning-map digitization: automated region extraction, georeferencing, and human-in-the-loop review (OpenCV) enabling parcel-level designation lookup</li>
+            <li><b>Built</b> a planning-map digitization pipeline (OpenCV) with automated region extraction, georeferencing, and human-in-the-loop review, enabling parcel-level designation lookup</li>
         </ul>
     </div>
 

@@ -20,6 +20,7 @@ export const projectDefaults = {
     articleUrl: null,
     clientType: null,
     impactMetric: null,
+    role: null, // e.g. 'Computer Vision Engineer · model development through production deployment'
     useCases: [],
     // Case-study fields (rendered when present)
     problem: null,

@@ -3,6 +3,7 @@ const project = {
     title: 'AI-Powered Workflow Builder',
     shortDescription: 'Drag-and-drop automation platform with intelligent code generation and automatic workflow creation.',
     fullDescription: `Enterprise-grade visual workflow builder that enables teams to create complex AI pipelines without writing code. Features intelligent node connection, automatic code generation, and real-time workflow validation.`,
+    role: 'AI/ML Engineer · sole builder, from architecture through delivery',
     category: 'professional',
     sector: 'enterprise',
     type: 'case-study',

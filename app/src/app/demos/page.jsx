@@ -1,3 +1,12 @@
+import AskPortfolio from '@/components/sections/AskPortfolio';
+import Tokenizer from '@/components/sections/Tokenizer';
+import AttentionLens from '@/components/sections/AttentionLens';
+import Morphogenesis from '@/components/sections/Morphogenesis';
+import ProteinFolding from '@/components/sections/ProteinFolding';
+import SequenceAlignment from '@/components/sections/SequenceAlignment';
+import HodgkinHuxley from '@/components/sections/HodgkinHuxley';
+import Evolution from '@/components/sections/Evolution';
+import SignalMicroscope from '@/components/sections/SignalMicroscope';
 import NeuralPlayground from '@/components/sections/NeuralPlayground';
 import KeypointStudio from '@/components/sections/KeypointStudio';
 import MirrorTherapy from '@/components/sections/MirrorTherapy';
@@ -28,6 +37,15 @@ export default function DemosPage() {
                 </div>
             </section>
 
+            <AskPortfolio />
+            <Tokenizer />
+            <AttentionLens />
+            <Morphogenesis />
+            <ProteinFolding />
+            <SequenceAlignment />
+            <HodgkinHuxley />
+            <Evolution />
+            <SignalMicroscope />
             <CoughMonitor />
             <MirrorTherapy />
             <CamouflageTester />

@@ -1,0 +1,143 @@
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    animation: fadeInUp 0.7s ease forwards;
+    animation-delay: 0.3s;
+    opacity: 0;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.panelHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.liveDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+    animation: livePulse 2s ease-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes livePulse {
+    from {
+        box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-success) 50%, transparent);
+    }
+
+    to {
+        box-shadow: 0 0 0 8px transparent;
+    }
+}
+
+.panelTitle {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+}
+
+.canvas {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(124, 106, 239, 0.25);
+    background: #101022;
+}
+
+.accRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.accTrack {
+    flex: 1;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
+    overflow: hidden;
+}
+
+.accFill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: var(--gradient-accent);
+    transition: width 0.2s ease-out;
+}
+
+.accVal {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-accent-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.statsRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.stat b {
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.pill {
+    padding: 3px var(--space-4);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+}
+
+.pill:hover {
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+}
+
+.pillActive {
+    color: #fff;
+    background: var(--gradient-accent);
+    border-color: transparent;
+}
+
+.caption {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+    line-height: 1.5;
+    max-width: none;
+}

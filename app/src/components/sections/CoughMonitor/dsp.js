@@ -105,7 +105,16 @@ export function buildMelFilterbank(sampleRate, fftSize = FRAME_SIZE, numFilters 
 
 /* ---------- MFCC ---------- */
 
-function dct2(input, numCoeffs) {
+/** Hamming window of a given size (also used by the Signal Microscope demo). */
+export function hammingWindow(size) {
+    const w = new Float64Array(size);
+    for (let i = 0; i < size; i++) {
+        w[i] = 0.54 - 0.46 * Math.cos((2 * Math.PI * i) / (size - 1));
+    }
+    return w;
+}
+
+export function dct2(input, numCoeffs) {
     const n = input.length;
     const out = new Float64Array(numCoeffs);
     for (let k = 0; k < numCoeffs; k++) {

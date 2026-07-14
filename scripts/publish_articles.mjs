@@ -35,6 +35,15 @@ const TAGS = {
     '04-digit-recognizer.md': ['machinelearning', 'python', 'javascript', 'neuralnetworks'],
     '05-keypoints.md': ['computervision', 'machinelearning', 'webdev', 'javascript'],
     '06-reticle.md': ['opensource', 'computervision', 'react', 'python'],
+    // The notes below are drafted in articles/drafts/ and not published yet. Tags
+    // are pre-set so publishing is one step: move the file up to articles/, then run.
+    '07-morphogenesis.md': ['javascript', 'webgl', 'simulation', 'science'],
+    '08-attention.md': ['machinelearning', 'ai', 'javascript', 'datascience'],
+    '09-protein-folding.md': ['javascript', 'algorithms', 'simulation', 'science'],
+    '10-sequence-alignment.md': ['algorithms', 'javascript', 'datascience', 'science'],
+    '11-hodgkin-huxley.md': ['javascript', 'simulation', 'science', 'datascience'],
+    '12-evolution.md': ['javascript', 'simulation', 'science', 'datascience'],
+    '13-tokenizer.md': ['machinelearning', 'ai', 'javascript', 'datascience'],
 };
 
 const CANONICAL_BASE = 'https://rs-03.github.io/demos/';
