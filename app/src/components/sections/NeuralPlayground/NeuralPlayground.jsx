@@ -30,6 +30,7 @@ function sampleActivations(layer, indices) {
 export default function NeuralPlayground() {
     const canvasRef = useRef(null);
     const previewRef = useRef(null);
+    const saliencyRef = useRef(null);
     const drawingRef = useRef(false);
     const lastPointRef = useRef(null);
     const lastPredictRef = useRef(0);
@@ -77,6 +78,38 @@ export default function NeuralPlayground() {
                 img.data[i * 4 + 3] = 255;
             }
             pctx.putImageData(img, 0, 0);
+        }
+
+        // Saliency: how much each pixel pushed the winning digit's score up or
+        // down (gradient of the logit times the ink actually present there).
+        const salCanvas = saliencyRef.current;
+        if (salCanvas) {
+            const grad = model.saliency(input, digit);
+            let maxAbs = 1e-6;
+            const contrib = new Float32Array(784);
+            for (let i = 0; i < 784; i++) {
+                const c = grad[i] * input[i];
+                contrib[i] = c;
+                const m = Math.abs(c);
+                if (m > maxAbs) maxAbs = m;
+            }
+            const sctx = salCanvas.getContext('2d');
+            const simg = sctx.createImageData(28, 28);
+            for (let i = 0; i < 784; i++) {
+                const n = contrib[i] / maxAbs; // [-1, 1]
+                const t = Math.pow(Math.min(1, Math.abs(n)), 0.6);
+                if (n >= 0) {
+                    simg.data[i * 4] = 255 * t;
+                    simg.data[i * 4 + 1] = 70 * t;
+                    simg.data[i * 4 + 2] = 70 * t;
+                } else {
+                    simg.data[i * 4] = 70 * t;
+                    simg.data[i * 4 + 1] = 130 * t;
+                    simg.data[i * 4 + 2] = 255 * t;
+                }
+                simg.data[i * 4 + 3] = 255;
+            }
+            sctx.putImageData(simg, 0, 0);
         }
     }, [model]);
 
@@ -135,6 +168,10 @@ export default function NeuralPlayground() {
         const preview = previewRef.current;
         if (preview) {
             preview.getContext('2d').clearRect(0, 0, 28, 28);
+        }
+        const sal = saliencyRef.current;
+        if (sal) {
+            sal.getContext('2d').clearRect(0, 0, 28, 28);
         }
         setResult(null);
         setHasInk(false);
@@ -272,6 +309,30 @@ export default function NeuralPlayground() {
                                 </div>
                             ))}
                         </div>
+
+                        <div className={styles.saliency}>
+                            <span className={styles.saliencyLabel}>Why this digit? Pixel influence</span>
+                            <div className={styles.saliencyBody}>
+                                <canvas
+                                    ref={saliencyRef}
+                                    width={28}
+                                    height={28}
+                                    className={styles.saliencyCanvas}
+                                    aria-label="Saliency map: pixels that most influenced the prediction"
+                                />
+                                <div className={styles.saliencyText}>
+                                    {result ? (
+                                        <>
+                                            <span className={styles.salItem}><i style={{ background: '#ef4444' }} /> pushed toward <b>{result.digit}</b></span>
+                                            <span className={styles.salItem}><i style={{ background: '#3b82f6' }} /> pushed away</span>
+                                            <span className={styles.salHint}>gradient of the score for {result.digit}, per pixel</span>
+                                        </>
+                                    ) : (
+                                        <span className={styles.salHint}>Draw a digit to see which strokes the network leans on.</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -321,6 +382,14 @@ export default function NeuralPlayground() {
                                 <a href={`${siteConfig.social.repo}/blob/main/scripts/test_inference_parity.mjs`} target="_blank" rel="noopener noreferrer">
                                     test_inference_parity.mjs →
                                 </a>
+                            </li>
+                            <li>
+                                <strong>It shows its reasoning</strong>: the saliency map is the
+                                exact gradient of the winning digit&apos;s score with respect to
+                                every pixel (Simonyan, Vedaldi &amp; Zisserman, 2013),
+                                backpropagated through these same weights and multiplied by the ink
+                                that&apos;s actually there. Red strokes raised that score, blue
+                                lowered it. Interpretability, not a decorative heatmap.
                             </li>
                         </ul>
                     </div>

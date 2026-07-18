@@ -71,8 +71,76 @@ export function createModel(modelData) {
         throw new Error('model has no layers');
     }
 
+    // Vanilla-gradient saliency (Simonyan, Vedaldi & Zisserman, 2013): the exact
+    // gradient of the chosen class logit with respect to every input pixel,
+    // obtained by backpropagating a one-hot through the same weights. Positive
+    // values mean a pixel raises that class score, negative values lower it.
+    function saliency(input, classIdx) {
+        // forward, caching each layer's pre-activation for the ReLU masks
+        let a = input;
+        const preacts = [];
+        for (let li = 0; li < layers.length; li++) {
+            const { w, b, rows, cols } = layers[li];
+            const z = new Float32Array(cols);
+            for (let j = 0; j < cols; j++) {
+                let sum = b[j];
+                for (let i = 0; i < rows; i++) sum += a[i] * w[i * cols + j];
+                z[j] = sum;
+            }
+            preacts.push(z);
+            if (li < layers.length - 1) {
+                const out = new Float32Array(cols);
+                for (let j = 0; j < cols; j++) out[j] = z[j] > 0 ? z[j] : 0;
+                a = out;
+            }
+        }
+
+        // backprop a one-hot on the output logits down to the input
+        const L = layers.length;
+        let grad = new Float32Array(layers[L - 1].cols);
+        grad[classIdx] = 1;
+        for (let li = L - 1; li >= 0; li--) {
+            const { w, rows, cols } = layers[li];
+            const dIn = new Float32Array(rows);
+            for (let i = 0; i < rows; i++) {
+                let s = 0;
+                const base = i * cols;
+                for (let j = 0; j < cols; j++) s += grad[j] * w[base + j];
+                dIn[i] = s;
+            }
+            // the activation feeding this layer came through a ReLU (except the input)
+            if (li > 0) {
+                const zPrev = preacts[li - 1];
+                for (let i = 0; i < rows; i++) if (zPrev[i] <= 0) dIn[i] = 0;
+            }
+            grad = dIn;
+        }
+        return grad; // Float32Array(784): d logit[classIdx] / d input
+    }
+
+    // Raw pre-softmax logits (used by the saliency finite-difference test).
+    function logits(input) {
+        let a = input;
+        for (let li = 0; li < layers.length; li++) {
+            const { w, b, rows, cols } = layers[li];
+            const out = new Float32Array(cols);
+            for (let j = 0; j < cols; j++) {
+                let sum = b[j];
+                for (let i = 0; i < rows; i++) sum += a[i] * w[i * cols + j];
+                out[j] = sum;
+            }
+            if (li < layers.length - 1) {
+                for (let j = 0; j < cols; j++) if (out[j] < 0) out[j] = 0;
+            }
+            a = out;
+        }
+        return a;
+    }
+
     return {
         forward,
+        saliency,
+        logits,
         info: {
             arch: modelData.arch,
             params: modelData.params,
