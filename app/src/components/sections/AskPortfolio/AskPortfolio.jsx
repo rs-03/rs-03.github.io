@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { buildSearcher, projectTo3d, NO_MATCH_THRESHOLD } from './searchCore';
 import EmbeddingCloud from './EmbeddingCloud';
+import ragEval from '@/data/ragEval.json';
 import styles from './AskPortfolio.module.css';
 
 const SUGGESTIONS = [
@@ -396,6 +397,14 @@ export default function AskPortfolio() {
                     </div>
                 </div>
 
+                <div className={styles.evalStrip}>
+                    <span className={styles.evalTitle}>Retrieval, measured on {ragEval.numQueries} labeled queries</span>
+                    <span className={styles.evalStat}><b>{(ragEval.recallAt3 * 100).toFixed(0)}%</b> recall@3</span>
+                    <span className={styles.evalStat}><b>{ragEval.mrr.toFixed(2)}</b> MRR</span>
+                    <span className={styles.evalStat}>on-topic <b>&ge;{ragEval.onTopicMin.toFixed(2)}</b>, off-topic <b>&le;{ragEval.offTopicMax.toFixed(2)}</b></span>
+                    <span className={styles.evalNote}>evaluated in CI, not claimed</span>
+                </div>
+
                 <details className={styles.underHood}>
                     <summary className={styles.underHoodSummary}>
                         Under the hood: measured, not vibes
@@ -417,18 +426,18 @@ export default function AskPortfolio() {
                                 sees your question.
                             </li>
                             <li>
-                                <strong>Evaluated before shipping.</strong> A 40-question labeled
-                                test set measures this exact pipeline: <b>100% recall@3, mean
-                                reciprocal rank 0.958</b>. The first run scored 97.5%; the failing
+                                <strong>Evaluated before shipping.</strong> A {ragEval.numQueries}-question
+                                labeled test set measures this exact pipeline: <b>{(ragEval.recallAt3 * 100).toFixed(0)}% recall@3, mean
+                                reciprocal rank {ragEval.mrr.toFixed(3)}</b>. The first run scored 97.5%; the failing
                                 query (&quot;built for utility companies&quot;) exposed missing sector
                                 vocabulary in the chunks, which was fixed and re-measured. Retrieval
                                 evaluation is how RAG systems earn trust.
                             </li>
                             <li>
                                 <strong>An honest no-match gate.</strong> Off-topic questions score
-                                below 0.16 against this corpus while on-topic ones score above
-                                0.24, so a 0.20 threshold refuses cleanly instead of dredging up
-                                noise. Calibrated from data, not guessed.
+                                below {ragEval.offTopicMax.toFixed(2)} against this corpus while on-topic ones score above
+                                {' '}{ragEval.onTopicMin.toFixed(2)}, so a {ragEval.gate.toFixed(2)} threshold refuses cleanly instead of
+                                dredging up noise. Calibrated from data, not guessed.
                             </li>
                             <li>
                                 <strong>Retrieval, then generation, both on-device.</strong>

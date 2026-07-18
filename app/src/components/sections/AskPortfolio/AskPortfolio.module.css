@@ -301,6 +301,39 @@
     color: var(--color-text-muted);
 }
 
+/* ---- measured retrieval quality ---- */
+.evalStrip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+    max-width: 760px;
+    margin: var(--space-6) auto 0;
+    padding: var(--space-3) var(--space-5);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.evalTitle {
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.evalStat b {
+    color: var(--color-accent-primary);
+    font-weight: 700;
+}
+
+.evalNote {
+    margin-left: auto;
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
 /* ---- cloud ---- */
 .cloud {
     width: 100%;

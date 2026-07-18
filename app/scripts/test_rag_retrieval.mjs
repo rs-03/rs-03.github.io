@@ -7,7 +7,7 @@
  *
  *   node scripts/test_rag_retrieval.mjs
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { pipeline } from '@huggingface/transformers';
@@ -137,6 +137,20 @@ console.log(`recall@3: ${hits}/${CASES.length} = ${((hits / CASES.length) * 100)
 console.log(`MRR: ${(mrrSum / CASES.length).toFixed(3)}`);
 console.log(`on-topic top-1 scores:  min ${Math.min(...onTopicTopScores).toFixed(3)}  median ${onTopicTopScores.sort((a, b) => a - b)[Math.floor(onTopicTopScores.length / 2)].toFixed(3)}`);
 console.log(`off-topic top-1 scores: max ${Math.max(...offTopicScores).toFixed(3)}  (${offTopicScores.map(s => s.toFixed(2)).join(', ')})`);
+
+// Emit the measured results so the demo can show real, current numbers.
+const sortedOn = [...onTopicTopScores].sort((a, b) => a - b);
+writeFileSync(join(here, '..', 'src', 'data', 'ragEval.json'), JSON.stringify({
+    numQueries: CASES.length,
+    recallAt3: Number((hits / CASES.length).toFixed(4)),
+    mrr: Number((mrrSum / CASES.length).toFixed(4)),
+    onTopicMin: Number(Math.min(...onTopicTopScores).toFixed(3)),
+    onTopicMedian: Number(sortedOn[Math.floor(sortedOn.length / 2)].toFixed(3)),
+    offTopicMax: Number(Math.max(...offTopicScores).toFixed(3)),
+    gate: 0.20,
+    model: index.model,
+}, null, 2) + '\n');
+console.log('wrote src/data/ragEval.json');
 
 if (failures.length) {
     console.log('\nfailures:');

@@ -1,0 +1,10 @@
+{
+  "numQueries": 40,
+  "recallAt3": 1,
+  "mrr": 0.9583,
+  "onTopicMin": 0.239,
+  "onTopicMedian": 0.514,
+  "offTopicMax": 0.16,
+  "gate": 0.2,
+  "model": "Xenova/all-MiniLM-L6-v2"
+}
