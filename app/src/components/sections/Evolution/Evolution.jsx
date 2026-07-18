@@ -209,6 +209,23 @@ export default function Evolution() {
             ctx.fillStyle = 'rgba(120,139,212,0.7)';
             ctx.fillText('lost', padL + 4, yOf(0) - 10);
 
+            // theory overlay: under drift alone the expected mean stays at the
+            // starting frequency (and the neutral fixation probability equals it),
+            // so the white empirical mean should hug this line when selection is off
+            // and pull away from it when selection is on.
+            const p0line = paramsRef.current.p0;
+            if (p0line > 0.02 && p0line < 0.98) {
+                const yP0 = yOf(p0line);
+                ctx.strokeStyle = 'rgba(255,210,122,0.5)';
+                ctx.setLineDash([5, 4]);
+                ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(padL, yP0); ctx.lineTo(W - padR, yP0); ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(255,210,122,0.85)';
+                ctx.textAlign = 'right';
+                ctx.fillText('neutral expectation', W - padR - 4, yP0 - 6);
+            }
+
             // trajectories, drawn lost first then segregating then fixed on top
             const order = [];
             for (let r = 0; r < R; r++) {
@@ -432,6 +449,7 @@ export default function Evolution() {
                             <span className={styles.legendItem}><i style={{ background: '#f6a723' }} /> fixed (reached 100%)</span>
                             <span className={styles.legendItem}><i style={{ background: '#788bd4' }} /> lost (reached 0%)</span>
                             <span className={styles.legendItem}><i style={{ background: '#ffffff', border: '1px solid #999' }} /> mean across populations</span>
+                            <span className={styles.legendItem}><i style={{ background: '#ffd27a' }} /> neutral expectation (drift)</span>
                         </div>
                     </div>
                 </div>
