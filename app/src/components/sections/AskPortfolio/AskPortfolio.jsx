@@ -22,6 +22,11 @@ const KIND_LABELS = {
     process: 'Process',
 };
 
+// Small instruct model for the optional on-device generation tier. Apache 2.0.
+// q4 is ~350 MB, downloaded once and cached; runs on WebGPU where available,
+// otherwise WebAssembly on the CPU.
+const GEN_MODEL = 'onnx-community/Qwen2.5-0.5B-Instruct';
+
 /**
  * Ask My Portfolio: glass-box semantic search over everything on this
  * site. The embedding model runs in the visitor's browser; retrieval,
@@ -38,6 +43,13 @@ export default function AskPortfolio() {
     const [stages, setStages] = useState(null);
     const [queryPoint, setQueryPoint] = useState(null);
     const [indexData, setIndexData] = useState(null);
+
+    // Optional on-device generation tier (the "G" in RAG)
+    const genRef = useRef(null); // { pipe, TextStreamer, backend }
+    const [genStatus, setGenStatus] = useState('idle'); // idle | loading | ready | generating | error
+    const [genProgress, setGenProgress] = useState(0);
+    const [answer, setAnswer] = useState('');
+    const [genMeta, setGenMeta] = useState(null); // { backend, tokens, ms }
 
     async function ensureEngine() {
         if (engineRef.current) return engineRef.current;
@@ -72,6 +84,8 @@ export default function AskPortfolio() {
         setBusy(true);
         setAsked(trimmed);
         setResults(null);
+        setAnswer('');
+        setGenMeta(null);
 
         const engine = await ensureEngine();
         if (!engine) {
@@ -97,6 +111,95 @@ export default function AskPortfolio() {
         setBusy(false);
     }
 
+    // Load the small instruct model once. Prefer WebGPU; fall back to WASM so it
+    // still runs where WebGPU is unavailable.
+    async function ensureGenerator() {
+        if (genRef.current) return genRef.current;
+        setGenStatus('loading');
+        setGenProgress(0);
+        try {
+            const transformers = await import('@huggingface/transformers');
+            // Only attempt WebGPU if an adapter actually exists, so we do not
+            // download the GPU weights just to fall back to WASM.
+            const hasGPU = await (async () => {
+                try {
+                    if (typeof navigator === 'undefined' || !navigator.gpu) return false;
+                    return !!(await navigator.gpu.requestAdapter());
+                } catch {
+                    return false;
+                }
+            })();
+            // q4 (not q4f16) on both backends: numerically robust for grounded
+            // output. q4f16 on some GPU backends degenerates into repetition.
+            const attempts = hasGPU
+                ? [{ device: 'webgpu', dtype: 'q4' }, { device: 'wasm', dtype: 'q4' }]
+                : [{ device: 'wasm', dtype: 'q4' }];
+            let lastErr = null;
+            for (const opt of attempts) {
+                try {
+                    const pipe = await transformers.pipeline('text-generation', GEN_MODEL, {
+                        ...opt,
+                        progress_callback: info => {
+                            if (info.status === 'progress' && /\.onnx/.test(info.file || '')) {
+                                setGenProgress(Math.round(info.progress || 0));
+                            }
+                        },
+                    });
+                    const gen = { pipe, TextStreamer: transformers.TextStreamer, backend: opt.device };
+                    genRef.current = gen;
+                    setGenStatus('ready');
+                    return gen;
+                } catch (e) {
+                    lastErr = e;
+                }
+            }
+            throw lastErr;
+        } catch {
+            setGenStatus('error');
+            return null;
+        }
+    }
+
+    // Grounded generation: feed only the retrieved passages, ask for citations,
+    // stream the answer token by token.
+    async function generate() {
+        const top = results;
+        if (!top || (top[0]?.score ?? 0) < NO_MATCH_THRESHOLD) return;
+        if (genStatus === 'loading' || genStatus === 'generating') return;
+        const ps = top.filter(r => r.score >= NO_MATCH_THRESHOLD).slice(0, 3);
+
+        setAnswer('');
+        setGenMeta(null);
+        const gen = await ensureGenerator();
+        if (!gen) return;
+        setGenStatus('generating');
+
+        const context = ps.map((p, i) => `[${i + 1}] ${p.chunk.title}: ${p.chunk.text}`).join('\n\n');
+        const system = 'You answer questions about Rahul Sangamker using ONLY the numbered context provided. Cite the sources you use inline like [1] or [2]. If the answer is not in the context, say you do not have that information. Be concise, at most three sentences, and never invent facts.';
+        const user = `Context:\n${context}\n\nQuestion: ${asked}`;
+
+        let tokens = 0;
+        const t0 = performance.now();
+        const streamer = new gen.TextStreamer(gen.pipe.tokenizer, {
+            skip_prompt: true,
+            skip_special_tokens: true,
+            callback_function: text => { tokens += 1; setAnswer(a => a + text); },
+        });
+        try {
+            await gen.pipe(
+                [{ role: 'system', content: system }, { role: 'user', content: user }],
+                // greedy keeps the answer faithful to the sources; the n-gram guard
+                // is cheap insurance against a repetition loop on odd backends
+                { max_new_tokens: 160, do_sample: false, no_repeat_ngram_size: 4, streamer },
+            );
+            const ms = Math.round(performance.now() - t0);
+            setGenMeta({ backend: gen.backend, tokens, ms });
+            setGenStatus('ready');
+        } catch {
+            setGenStatus('error');
+        }
+    }
+
     function onSubmit(e) {
         e.preventDefault();
         ask(question);
@@ -112,13 +215,13 @@ export default function AskPortfolio() {
         <section className={`section ${styles.ask}`} id="ask">
             <div className="container">
                 <div className="section-header">
-                    <span className="section-header__eyebrow">Live Demo · Glass-Box Retrieval</span>
+                    <span className="section-header__eyebrow">Live Demo · Glass-Box RAG</span>
                     <h2 className="section-header__title">Ask My Portfolio Anything</h2>
                     <p className="section-header__description">
-                        Type a question. An embedding model loads into your browser, reads it,
-                        and searches everything on this site semantically. Every step is
-                        visible: the scores, the sources, and where your question lands in
-                        the embedding space. Nothing leaves this page.
+                        Type a question. An embedding model loads into your browser, reads it, and
+                        searches everything on this site semantically. Then, if you want, a small
+                        language model runs on your device and writes a grounded answer from the
+                        sources it found. Every step is visible, and nothing leaves this page.
                     </p>
                 </div>
 
@@ -175,6 +278,54 @@ export default function AskPortfolio() {
                             </div>
                         )}
 
+                        {/* Generation tier: an on-device LLM answers from the retrieved sources */}
+                        {answerable && (
+                            <div className={styles.genBlock}>
+                                {!answer && genStatus !== 'loading' && genStatus !== 'generating' && (
+                                    <div className={styles.genPrompt}>
+                                        {genStatus === 'error' && (
+                                            <p className={styles.error}>
+                                                The model could not run here, but the sources below are still exact.
+                                            </p>
+                                        )}
+                                        <button className={styles.genButton} onClick={generate}>
+                                            {genStatus === 'ready' ? 'Generate another answer' : 'Generate a grounded answer'}
+                                        </button>
+                                        {genStatus === 'idle' && (
+                                            <p className={styles.genNote}>
+                                                Runs a 0.5B-parameter language model on your device, one download of
+                                                about 350 MB, then cached. No server, no API key. It answers only
+                                                from the sources below.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {genStatus === 'loading' && (
+                                    <p className={styles.stageNote}>
+                                        Loading the language model into your browser ({genProgress}%).
+                                        One-time download, about 350 MB.
+                                    </p>
+                                )}
+                                {(answer || genStatus === 'generating') && (
+                                    <div className={styles.answerCard}>
+                                        <div className={styles.answerHead}>
+                                            <span className={styles.answerBadge}>On-device answer</span>
+                                            {genStatus === 'generating' && <span className={styles.answerTyping}>generating…</span>}
+                                        </div>
+                                        <p className={styles.answerText}>
+                                            {answer}
+                                            {genStatus === 'generating' && <span className={styles.caret} aria-hidden="true" />}
+                                        </p>
+                                        {genMeta && (
+                                            <p className={styles.answerMeta}>
+                                                {genMeta.tokens} tokens · {(genMeta.tokens / Math.max(genMeta.ms / 1000, 0.1)).toFixed(1)} tok/s · {genMeta.backend === 'webgpu' ? 'WebGPU' : 'WebAssembly (CPU)'} · grounded in {passages.length} {passages.length === 1 ? 'source' : 'sources'}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Results */}
                         {results && !answerable && (
                             <div className={styles.noMatch}>
@@ -185,6 +336,7 @@ export default function AskPortfolio() {
                         )}
                         {passages.length > 0 && (
                             <div className={styles.results}>
+                                <span className={styles.sourcesLabel}>{answer || genStatus === 'generating' ? 'Sources' : 'Top matches'}</span>
                                 {passages.map(({ chunk, score }) => (
                                     <div key={chunk.id} className={styles.result}>
                                         <div className={styles.resultHeader}>
@@ -279,9 +431,14 @@ export default function AskPortfolio() {
                                 noise. Calibrated from data, not guessed.
                             </li>
                             <li>
-                                <strong>This is the retrieval half of RAG.</strong> An optional
-                                generation tier (a small LLM running on your GPU via WebGPU) is
-                                in the works; retrieval quality first, generation second.
+                                <strong>Retrieval, then generation, both on-device.</strong>
+                                Retrieval comes first, because a generator is only as good as what
+                                you feed it. The optional answer is written by a 0.5B-parameter
+                                instruct model (Qwen2.5) running in your browser via WebGPU, or
+                                WebAssembly where WebGPU is missing, prompted to use only the
+                                retrieved passages and to admit when it cannot answer. No API, no
+                                server, no key. That grounding discipline, answer from the sources
+                                or refuse, is what keeps a real RAG system from making things up.
                             </li>
                         </ul>
                     </div>

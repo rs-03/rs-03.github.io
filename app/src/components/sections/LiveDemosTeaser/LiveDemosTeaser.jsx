@@ -5,7 +5,7 @@ const DEMOS = [
     {
         icon: '💬',
         title: 'Ask My Portfolio',
-        blurb: 'Semantic search over this site, running in your browser',
+        blurb: 'A RAG chatbot that retrieves and answers on your own device',
         href: '/demos#ask',
     },
     {

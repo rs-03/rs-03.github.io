@@ -25,7 +25,7 @@ export const metadata = {
 
 // A skimmer's shortlist: the four that map most directly to paid AI/ML work.
 const FEATURED = [
-    { icon: '💬', title: 'Ask My Portfolio', why: 'Retrieval over this site, running in your browser', href: '#ask' },
+    { icon: '💬', title: 'Ask My Portfolio', why: 'Full RAG: retrieves and answers on-device, no server', href: '#ask' },
     { icon: '🧠', title: 'What a Sentence Attends To', why: 'How a transformer actually reads', href: '#attention' },
     { icon: '🎯', title: 'Can an AI Spot You?', why: 'Object detection under real conditions', href: '#camouflage' },
     { icon: '✍️', title: 'Draw a Digit', why: 'A neural network built from scratch', href: '#live-demo' },
