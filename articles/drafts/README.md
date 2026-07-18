@@ -22,3 +22,8 @@ run the publish flow.
   across many populations (pairs with the /demos#evolution demo).
 - `13-tokenizer.md` - byte-pair encoding trained live, the subword tokenization
   language models use (pairs with the /demos#tokens demo).
+- `14-diffusion.md` - denoising diffusion in 2D, the reverse process behind image
+  generators, with a closed-form score (pairs with the /demos#diffusion demo).
+
+`SHOW_HN.md` is a ready-to-post Show HN submission (title, body, and a first
+comment). It is not a dev.to article and is skipped by the publisher.

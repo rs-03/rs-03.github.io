@@ -51,6 +51,12 @@ const DEMOS = [
         href: '/demos#evolution',
     },
     {
+        icon: '🌫️',
+        title: 'Watch Noise Become a Shape',
+        blurb: 'Reverse diffusion, the math behind image generators, in 2D',
+        href: '/demos#diffusion',
+    },
+    {
         icon: '🔬',
         title: 'The Signal Microscope',
         blurb: 'Watch sound become numbers, every DSP stage animated live',
@@ -99,7 +105,7 @@ export default function LiveDemosTeaser() {
                     <span className="section-header__eyebrow">Proof, Not Promises</span>
                     <h2 className="section-header__title">Working AI You Can Try Right Now</h2>
                     <p className="section-header__description">
-                        Fourteen live demos run entirely in your browser, with nothing uploaded
+                        Fifteen live demos run entirely in your browser, with nothing uploaded
                         and nothing faked. Pick one and poke at it.
                     </p>
                 </div>

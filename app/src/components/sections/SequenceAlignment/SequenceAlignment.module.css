@@ -39,6 +39,55 @@
     margin: 0 var(--space-1);
 }
 
+.seqInputs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+
+.seqField {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.seqTag {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: var(--text-sm);
+    font-weight: 700;
+}
+
+.seqInput {
+    width: 200px;
+    max-width: 52vw;
+    padding: 6px var(--space-3);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: var(--text-sm);
+    letter-spacing: 0.14em;
+    color: var(--color-text-primary);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+}
+
+.seqInput:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+}
+
+.seqInput::placeholder {
+    letter-spacing: 0.02em;
+    color: var(--color-text-muted);
+}
+
+.seqHint {
+    font-size: var(--text-xs);
+    color: var(--color-text-muted);
+}
+
 .lab {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(230px, 1fr);

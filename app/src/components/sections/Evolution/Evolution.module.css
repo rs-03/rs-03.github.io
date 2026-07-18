@@ -55,6 +55,7 @@
     aspect-ratio: 720 / 460;
     border-radius: var(--radius-lg);
     background: #101022;
+    cursor: pointer;
 }
 
 .side {
@@ -220,6 +221,47 @@
     color: var(--color-text-muted);
     max-width: 640px;
 }
+
+.tip {
+    max-width: 660px;
+    margin: calc(-1 * var(--space-2)) auto var(--space-5);
+    text-align: center;
+    font-size: var(--text-sm);
+    line-height: 1.5;
+    color: var(--color-text-muted);
+}
+
+.narration {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    line-height: 1.4;
+    background: color-mix(in srgb, var(--color-accent-primary) 7%, transparent);
+    border-radius: var(--radius-lg);
+}
+
+.narrationDot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--color-text-muted);
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.18);
+    transition: background var(--transition-fast);
+}
+
+.narrationText {
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+}
+
+.narration[data-phase='strong'] .narrationDot { background: #f6a723; }
+.narration[data-phase='weak'] .narrationDot { background: #ffd27a; }
+.narration[data-phase='against'] .narrationDot { background: #788bd4; }
+.narration[data-phase='mut'] .narrationDot { background: #4ade80; }
+.narration[data-phase='drift'] .narrationDot { background: #9d8df0; }
 
 @media (max-width: 860px) {
     .lab {

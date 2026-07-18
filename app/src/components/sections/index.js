@@ -12,3 +12,4 @@ export { default as Testimonials } from './Testimonials';
 export { default as GitHubActivity } from './GitHubActivity';
 export { default as BeyondCode } from './BeyondCode';
 export { default as Contact } from './Contact';
+export { default as CTABand } from './CTABand';

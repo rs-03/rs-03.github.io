@@ -44,6 +44,7 @@ const TAGS = {
     '11-hodgkin-huxley.md': ['javascript', 'simulation', 'science', 'datascience'],
     '12-evolution.md': ['javascript', 'simulation', 'science', 'datascience'],
     '13-tokenizer.md': ['machinelearning', 'ai', 'javascript', 'datascience'],
+    '14-diffusion.md': ['machinelearning', 'ai', 'javascript', 'datascience'],
 };
 
 const CANONICAL_BASE = 'https://rs-03.github.io/demos/';

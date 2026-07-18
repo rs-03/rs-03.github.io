@@ -17,3 +17,77 @@
     max-width: 560px;
     color: var(--color-text-secondary);
 }
+
+.shareRow {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-5);
+}
+
+/* Skimmer shortlist */
+.featured {
+    margin: var(--space-8) auto 0;
+    max-width: 900px;
+}
+
+.featuredLabel {
+    display: block;
+    margin-bottom: var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.featuredRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-3);
+}
+
+.featuredCard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    text-align: left;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+}
+
+.featuredCard:hover {
+    border-color: var(--color-accent-primary);
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-3px);
+}
+
+.featuredIcon {
+    font-size: var(--text-xl);
+    line-height: 1;
+}
+
+.featuredTitle {
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.featuredWhy {
+    font-size: var(--text-xs);
+    line-height: 1.45;
+    color: var(--color-text-muted);
+}
+
+.bridge {
+    margin: var(--space-8) auto 0;
+    max-width: 620px;
+    font-size: var(--text-sm);
+    line-height: 1.7;
+    color: var(--color-text-secondary);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-6);
+}

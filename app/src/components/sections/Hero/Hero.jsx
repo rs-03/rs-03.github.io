@@ -62,7 +62,7 @@ export default function Hero() {
                     {/* Live demo teaser */}
                     <Link href="/demos" className={styles.demoTeaser}>
                         <span className={styles.demoTeaserPulse} aria-hidden="true" />
-                        Fourteen more live AI demos on this site. Try them →
+                        Fifteen more live AI demos on this site. Try them →
                     </Link>
                 </div>
 

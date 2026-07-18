@@ -79,23 +79,63 @@ const COL_M = '#f6a723';
 const COL_H = '#8cdcff';
 const COL_N = '#4ade80';
 
+const PHASE_COLORS = { peak: '#ffffff', rise: COL_M, fall: COL_H, refractory: COL_N, rest: COL_V };
+
+// panel geometry, shared by the renderer and the click-to-inject handler
+const TRACE_TOP = 20, TRACE_BOT = 320, TRACE_VMIN = -85, TRACE_VMAX = 55;
+
+// a short, phase-accurate caption for whatever the membrane is doing right now
+function narrate(V, dv, m) {
+    if (V >= 0) return { key: 'peak', text: 'Overshoot: the voltage rockets past 0 mV as sodium floods in.' };
+    if (dv > 3 && m > 0.3) return { key: 'rise', text: 'Depolarizing: the sodium channels avalanche open.' };
+    if (dv < -3) return { key: 'fall', text: 'Repolarizing: potassium pulls the voltage back down.' };
+    if (V < V_REST - 2) return { key: 'refractory', text: 'Refractory: the cell briefly cannot fire again.' };
+    return { key: 'rest', text: 'At rest near -65 mV. Inject current to cross threshold.' };
+}
+
+const REST_NARRATION = 'At rest near -65 mV. Inject current to cross threshold.';
+
 export default function HodgkinHuxley() {
     const canvasRef = useRef(null);
     const paramsRef = useRef({ I: 0 });
-    const pulseRef = useRef({ remaining: 0 });
-    const statsRef = useRef({ V: V_REST, spikes: 0, rateHz: 0 });
+    const pulseRef = useRef({ remaining: 0, amp: 20 });
+    const injectRef = useRef({ x: 0, y: 0, life: 0 });
+    const soundRef = useRef(false);
+    const audioRef = useRef(null);
+    const statsRef = useRef({ V: V_REST, spikes: 0, rateHz: 0, phase: 'rest', narration: REST_NARRATION });
 
     const [presetName, setPresetName] = useState('Rest');
     const [current, setCurrent] = useState(0);
-    const [stats, setStats] = useState({ V: V_REST, spikes: 0, rateHz: 0 });
+    const [sound, setSound] = useState(false);
+    const [stats, setStats] = useState({ V: V_REST, spikes: 0, rateHz: 0, phase: 'rest', narration: REST_NARRATION });
 
     useEffect(() => { paramsRef.current = { I: current }; }, [current]);
+    useEffect(() => { soundRef.current = sound; }, [sound]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return undefined;
         const ctx = canvas.getContext('2d');
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // a short percussive tick per spike, only when the visitor has asked for sound
+        function blip() {
+            if (!soundRef.current) return;
+            const ac = audioRef.current;
+            if (!ac) return;
+            if (ac.state === 'suspended') ac.resume();
+            const t0 = ac.currentTime;
+            const osc = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(900, t0);
+            osc.frequency.exponentialRampToValueAtTime(240, t0 + 0.05);
+            gain.gain.setValueAtTime(0.0001, t0);
+            gain.gain.exponentialRampToValueAtTime(0.11, t0 + 0.004);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+            osc.connect(gain); gain.connect(ac.destination);
+            osc.start(t0); osc.stop(t0 + 0.15);
+        }
 
         const vBuf = new Float32Array(L).fill(V_REST);
         const mBuf = new Float32Array(L);
@@ -109,6 +149,8 @@ export default function HodgkinHuxley() {
         let prevV = s.V;
         const spikeTimes = [];
         let simMs = 0;
+        let lastFrameV = s.V;
+        let phaseKey = 'rest';
 
         canvas._hh = {
             peek: () => ({ V: s.V, spikes: spikeCount }),
@@ -132,13 +174,13 @@ export default function HodgkinHuxley() {
         function pushSample() {
             let I = paramsRef.current.I;
             if (pulseRef.current.remaining > 0) {
-                I += 20;
+                I += pulseRef.current.amp;
                 pulseRef.current.remaining -= SAMPLE_SUBSTEPS * DT;
             }
             for (let k = 0; k < SAMPLE_SUBSTEPS; k++) {
                 s = hhStep(s, I, DT);
                 simMs += DT;
-                if (prevV < 0 && s.V >= 0) { spikeCount++; spikeTimes.push(simMs); }
+                if (prevV < 0 && s.V >= 0) { spikeCount++; spikeTimes.push(simMs); blip(); }
                 prevV = s.V;
             }
             vBuf[head] = s.V; mBuf[head] = s.m; hBuf[head] = s.h; nBuf[head] = s.n;
@@ -168,8 +210,8 @@ export default function HodgkinHuxley() {
             ctx.fillStyle = '#101022';
             ctx.fillRect(0, 0, W, H);
 
-            const vTop = 20, vBot = 320;
-            const VMIN = -85, VMAX = 55;
+            const vTop = TRACE_TOP, vBot = TRACE_BOT;
+            const VMIN = TRACE_VMIN, VMAX = TRACE_VMAX;
             const yOf = v => vBot - ((v - VMIN) / (VMAX - VMIN)) * (vBot - vTop);
 
             // reference lines: 0 mV, threshold ~ -55, rest -65
@@ -188,6 +230,25 @@ export default function HodgkinHuxley() {
             }
 
             line(vBuf, vTop, vBot, VMIN, VMAX, COL_V, true);
+
+            // leading-edge marker coloured by the live phase, tying caption to trace
+            const yTip = yOf(s.V);
+            const dotCol = PHASE_COLORS[phaseKey] || COL_V;
+            ctx.save();
+            ctx.shadowColor = dotCol; ctx.shadowBlur = 14;
+            ctx.fillStyle = dotCol;
+            ctx.beginPath(); ctx.arc(W - 4, yTip, 4.5, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+
+            // fading ring where the visitor clicked to inject current
+            if (injectRef.current.life > 0) {
+                const fr = injectRef.current.life / 22;
+                ctx.strokeStyle = `rgba(255, 210, 122, ${fr})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(injectRef.current.x, injectRef.current.y, (1 - fr) * 24 + 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
 
             // gating variables panel
             const gTop = 356, gBot = 500;
@@ -211,11 +272,16 @@ export default function HodgkinHuxley() {
         function frame() {
             if (!session.running) return;
             for (let f = 0; f < FRAME_SAMPLES; f++) pushSample();
+            const dv = s.V - lastFrameV;
+            lastFrameV = s.V;
+            const nar = narrate(s.V, dv, s.m);
+            phaseKey = nar.key;
+            if (injectRef.current.life > 0) injectRef.current.life -= 1;
             draw();
             session.sinceStats += 1;
-            if (session.sinceStats >= 8) {
+            if (session.sinceStats >= 6) {
                 session.sinceStats = 0;
-                statsRef.current = { V: s.V, spikes: spikeCount, rateHz: spikeTimes.length };
+                statsRef.current = { V: s.V, spikes: spikeCount, rateHz: spikeTimes.length, phase: nar.key, narration: nar.text };
                 setStats(statsRef.current);
             }
             session.rafId = requestAnimationFrame(frame);
@@ -223,10 +289,12 @@ export default function HodgkinHuxley() {
 
         if (reducedMotion) {
             // show a single evoked spike as a static trace
-            pulseRef.current.remaining = 1.5;
+            pulseRef.current = { remaining: 1.5, amp: 20 };
             for (let i = 0; i < L; i++) pushSample();
+            phaseKey = 'rest';
             draw();
-            setStats({ V: s.V, spikes: spikeCount, rateHz: 0 });
+            const nar = narrate(s.V, 0, s.m);
+            setStats({ V: s.V, spikes: spikeCount, rateHz: 0, phase: nar.key, narration: nar.text });
         } else {
             session.rafId = requestAnimationFrame(frame);
         }
@@ -253,13 +321,48 @@ export default function HodgkinHuxley() {
             observer.disconnect();
             document.removeEventListener('visibilitychange', onVis);
             canvas._hh = null;
+            if (audioRef.current) {
+                try { audioRef.current.close(); } catch { /* already closed */ }
+                audioRef.current = null;
+            }
         };
     }, []);
 
     function choosePreset(p) {
         setPresetName(p.name);
         setCurrent(p.I);
-        if (p.pulse) pulseRef.current.remaining = 1.5;
+        if (p.pulse) pulseRef.current = { remaining: 1.5, amp: 20 };
+    }
+
+    // click the trace to inject a brief current; higher clicks jolt harder, so a
+    // low click stays sub-threshold and a high one triggers a spike
+    function onCanvasPointerDown(e) {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+        const frac = 1 - Math.min(1, Math.max(0, (y - TRACE_TOP) / (TRACE_BOT - TRACE_TOP)));
+        const amp = 3 + frac * 33;
+        pulseRef.current = { remaining: 1.2, amp };
+        injectRef.current = { x, y, life: 22 };
+        setPresetName('Custom');
+    }
+
+    // build/resume the AudioContext inside the click (a user gesture) so the
+    // browser's autoplay policy is satisfied
+    function toggleSound() {
+        const next = !soundRef.current;
+        if (next) {
+            if (!audioRef.current) {
+                try {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (AC) audioRef.current = new AC();
+                } catch { /* audio unavailable */ }
+            }
+            if (audioRef.current && audioRef.current.state === 'suspended') audioRef.current.resume();
+        }
+        setSound(next);
     }
 
     return (
@@ -289,14 +392,38 @@ export default function HodgkinHuxley() {
                             {p.name}
                         </button>
                     ))}
-                    <button className={styles.pill} onClick={() => { pulseRef.current.remaining = 1.5; }}>
+                    <button className={styles.pill} onClick={() => { pulseRef.current = { remaining: 1.5, amp: 20 }; }}>
                         Zap (pulse)
+                    </button>
+                    <button
+                        className={`${styles.pill} ${sound ? styles.pillActive : ''}`}
+                        onClick={toggleSound}
+                        aria-pressed={sound}
+                        title="Play a tick on every spike"
+                    >
+                        {sound ? '🔊 Sound on' : '🔈 Sound off'}
                     </button>
                 </div>
 
+                <p className={styles.tip}>
+                    Tip: click anywhere on the voltage trace to inject current. Click high for a
+                    strong jolt that fires a spike, low for a sub-threshold nudge that just leaks away.
+                </p>
+
                 <div className={styles.lab}>
                     <div className={styles.stagePanel}>
-                        <canvas ref={canvasRef} width={720} height={520} className={styles.canvas} aria-label="Live membrane voltage and gating variables of a Hodgkin-Huxley neuron" />
+                        <canvas
+                            ref={canvasRef}
+                            width={720}
+                            height={520}
+                            className={styles.canvas}
+                            onPointerDown={onCanvasPointerDown}
+                            aria-label="Live membrane voltage and gating variables of a Hodgkin-Huxley neuron. Click the trace to inject current."
+                        />
+                        <div className={styles.narration} data-phase={stats.phase}>
+                            <span className={styles.narrationDot} aria-hidden="true" />
+                            <span className={styles.narrationText}>{stats.narration}</span>
+                        </div>
                     </div>
 
                     <div className={styles.side}>

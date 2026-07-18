@@ -4,13 +4,13 @@
 
 ## Evolution is not only survival of the fittest
 
-The phrase "survival of the fittest" makes evolution sound like an optimizer that always finds the better gene. In an infinite population that would be true. But real populations are finite, and in a finite population chance has the final say more often than intuition allows. Which parents happen to leave offspring, which gene copies happen to get passed on, is a coin-flip sampling process, and over generations that sampling noise accumulates into a real evolutionary force called genetic drift. Drift can fix a useless gene and eliminate a helpful one, purely by luck.
+"Survival of the fittest" makes evolution sound like an optimizer that always finds the better gene. In an infinite population, sure, that would be true. Real populations aren't infinite, though, and the moment they're finite, chance gets the final say a lot more often than intuition wants to admit. Think about what actually happens each generation: which parents leave offspring, which gene copies get passed on. That's a coin-flip sampling process. Stack enough of those flips together and the sampling noise stops being noise. It turns into a real evolutionary force, genetic drift, and drift will happily fix a useless gene or wipe out a helpful one on luck alone.
 
-This is not a footnote to selection. It is one of the pillars of modern population genetics, worked out by R. A. Fisher ("The Genetical Theory of Natural Selection," 1930) and Sewall Wright ("Evolution in Mendelian Populations," Genetics, 1931), and pushed further by Motoo Kimura, whose neutral theory argued that most molecular evolution is drift, not selection, at all.
+This isn't a footnote to selection. It's one of the pillars of modern population genetics, worked out by R. A. Fisher ("The Genetical Theory of Natural Selection," 1930) and Sewall Wright ("Evolution in Mendelian Populations," Genetics, 1931), and later pushed much further by Motoo Kimura, whose neutral theory argued that most molecular evolution is drift, not selection, at all.
 
 ## The Wright-Fisher model
 
-The standard idealization is beautifully simple. A population has N diploid individuals, so 2N copies of the gene. Each generation is built by drawing 2N new copies at random from the current pool, which means the next generation's allele frequency is a binomial random variable centered on the current one. Selection tilts the sampling odds toward the fitter allele, and mutation flips a small fraction of copies. One generation, in full:
+The standard idealization is almost embarrassingly simple, which is part of why I like it. A population has N diploid individuals, so 2N copies of the gene floating around. To build the next generation you draw 2N new copies at random from the current pool. That one move is the whole trick: it makes the next generation's allele frequency a binomial random variable centered on the current one. Selection tilts the sampling odds toward the fitter allele, mutation flips a small fraction of copies, and that's really it. Here is one generation in full:
 
 ```javascript
 function oneGen(p, N, s, mu, rng) {
@@ -21,33 +21,33 @@ function oneGen(p, N, s, mu, rng) {
 }
 ```
 
-The demo runs dozens of these populations side by side from the same starting frequency, using a seeded generator so a given setting always plays out the same way, and draws each population's allele frequency as a trajectory. The result is a spreading tangle of lines, colored by fate: the ones that climb to fixation, the ones that crash to loss, and the ones still undecided, with the average across populations drawn in white.
+The demo runs dozens of these populations side by side from the same starting frequency. It uses a seeded generator, so a given setting always plays out the same way (handy when you want to point at one specific run and explain it). Each population's allele frequency gets drawn as its own trajectory. What you end up staring at is a spreading tangle of lines colored by fate: the ones climbing to fixation, the ones crashing to loss, and the ones still undecided, with the average across populations drawn in white.
 
 ## Drift is a force, not noise
 
-Turn selection off and something striking happens. The average frequency across all the populations barely moves, yet every individual population wanders until it slams into 0 or 1 and sticks there forever. Chance alone is sorting a uniform starting condition into winners and losers.
+Turn selection off and something genuinely striking happens. The average frequency across all the populations barely budges. And yet every single population wanders on its own until it slams into 0 or 1 and stays there forever. Chance, and nothing else, is sorting one uniform starting condition into winners and losers.
 
-And it does so with a precise law. The probability that a neutral allele eventually takes over a population is exactly its starting frequency. Start at fifty percent and about half the populations fix it; start at twenty percent and about a fifth do. You can watch that number fall out of the simulation. A related law governs variation: heterozygosity, the chance that two random gene copies differ, decays at a rate of roughly one over twice the population size per generation, which is why the demo shows a heterozygosity readout collapsing toward zero as populations fix. Smaller populations lose their genetic variation faster, which is the central worry of conservation genetics.
+What gets me is that it does this by a precise law, not a fuzzy tendency. The probability that a neutral allele eventually takes over a population is exactly its starting frequency. Start at fifty percent and about half the populations fix it. Start at twenty percent and about a fifth do. You can watch that number fall straight out of the simulation. There's a companion law for variation, too: heterozygosity, the chance that two random gene copies differ, decays at a rate of roughly one over twice the population size per generation. That's why the demo's heterozygosity readout keeps collapsing toward zero as populations fix. Smaller populations bleed out their variation faster, and that's the central worry of conservation genetics.
 
 ## Verify, do not vibe
 
-A stochastic simulation is only trustworthy if it reproduces the theorems it is supposed to, so the model exposes a deterministic batch runner and an automated test compares it to known results. Running hundreds of neutral populations, the fraction that fix comes out at 0.492 when the starting frequency is 0.5, and 0.207 when it is 0.2, matching the "fixation probability equals starting frequency" law to within sampling error. Turn selection strongly positive and essentially all populations fix the allele; turn it strongly negative and essentially all lose it. Every frequency stays a valid probability between zero and one, and nothing diverges. The dice are honest, and checkably so.
+A stochastic simulation is only worth trusting if it actually reproduces the theorems it's supposed to. So the model exposes a deterministic batch runner, and an automated test checks it against known results. Run hundreds of neutral populations and the fraction that fix comes out at 0.492 when the starting frequency is 0.5, and 0.207 when it's 0.2, both landing on the "fixation probability equals starting frequency" law to within sampling error. Crank selection strongly positive and essentially every population fixes the allele; crank it strongly negative and essentially all of them lose it. Every frequency stays a valid probability between zero and one, and nothing diverges. The dice are honest, and, more to the point, checkably so.
 
 ## Selection versus drift
 
-The demo makes the real tension visible. A beneficial allele is not guaranteed to win. Its fixation probability rises with the selection coefficient but stays well below certainty when selection is weak or the population is small, because drift can snuff out a good gene before selection amplifies it. This balance, captured by the product of population size and selection strength, is one of the deepest results in the field and the reason effective population size matters so much in evolution. Nudge the selection slider up from zero and watch the cloud of trajectories bend from a random spread into a confident sweep.
+This is where the demo earns its keep, because it makes the real tension visible. A beneficial allele is not guaranteed to win. Ever. Its fixation probability rises with the selection coefficient, but it stays well below certainty when selection is weak or the population is small, since drift can snuff out a good gene before selection ever amplifies it. That balance, captured by the product of population size and selection strength, is one of the deepest results in the field and the reason effective population size matters as much as it does. Nudge the selection slider up from zero and watch the cloud of trajectories bend from a random spread into a confident sweep.
 
 ## Where this goes
 
-The single-locus model is the foundation. The living extensions are the field:
+The single-locus model is the foundation. The interesting bit is that its living extensions basically are the field:
 
-- Linked genes. Genes do not evolve alone; a sweeping beneficial allele drags its neighbors along, a phenomenon called genetic hitchhiking that shapes real genomes.
-- Structure. Populations are not well-mixed; migration between subpopulations changes everything, which is Wright's own island model and its descendants.
-- The coalescent. Running the process backward in time, asking where the shared ancestors of today's copies are, gives the coalescent, the workhorse of modern population genomics for inferring history from DNA.
+- Linked genes. No gene evolves alone. A sweeping beneficial allele drags its neighbors along, a phenomenon called genetic hitchhiking that leaves fingerprints all over real genomes.
+- Structure. Real populations aren't well-mixed, and once you allow migration between subpopulations everything changes. That's Wright's own island model and its descendants.
+- The coalescent. Run the process backward in time, asking where the shared ancestors of today's copies came from, and you get the coalescent, the workhorse of modern population genomics for inferring history from DNA.
 
 ## The pattern generalizes
 
-The lesson beyond biology is humility about small numbers. In any system where outcomes are resampled each round from a finite pool, chance is not a small correction to the deterministic story, it is part of the story, and it can dominate when the pool is small. That is true of allele frequencies, and it is true of startups, of cultural fads, and of any process where success feeds on itself in a finite arena. Fitness matters, but so does luck, and a finite world runs on both.
+If there's a lesson that reaches past biology, it's humility about small numbers. Any time outcomes get resampled each round from a finite pool, chance isn't a small correction to the deterministic story. It's part of the story, and when the pool is small it can dominate. That's true of allele frequencies. It's also true of startups, of cultural fads, of any process where success feeds on itself in a finite arena. Fitness matters. Luck matters too. A finite world runs on both.
 
 **Try it live** (nothing leaves your device): [rs-03.github.io/demos](https://rs-03.github.io/demos/#evolution)
 **Source**: [github.com/rs-03/rs-03.github.io](https://github.com/rs-03/rs-03.github.io). See the Evolution component and its population-genetics test.

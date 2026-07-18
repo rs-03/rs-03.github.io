@@ -221,7 +221,8 @@
             }
         }
 
-        .section-header {
+        .section-header,
+        .reveal-on-scroll {
             animation: scrollReveal both;
             animation-timeline: view();
             animation-range: entry 5% entry 40%;

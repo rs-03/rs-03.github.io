@@ -83,6 +83,19 @@ export default function Contact() {
                                 <span className={styles.contactLabel}>Location</span>
                                 <span className={styles.contactValue}>{siteConfig.location}</span>
                             </div>
+
+                            {siteConfig.bookingUrl && (
+                                <a
+                                    href={siteConfig.bookingUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.contactMethod}
+                                >
+                                    <span className={styles.contactIcon}>📅</span>
+                                    <span className={styles.contactLabel}>Prefer to talk? Book a call</span>
+                                    <span className={styles.contactValue}>Grab a 20-minute slot</span>
+                                </a>
+                            )}
                         </div>
                     </div>
 

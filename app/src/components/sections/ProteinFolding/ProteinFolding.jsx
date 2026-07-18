@@ -39,17 +39,30 @@ const key = (x, y) => (x + OFF) * STRIDE + (y + OFF);
 const COL_H = '#f6a723';
 const COL_P = '#7d8bd4';
 
+const FOLD_PHASE_COLORS = { best: '#ffffff', hot: '#f6a723', cool: '#8cdcff', cold: '#4ade80' };
+const FOLD_START_NARRATION = 'Warming up: the chain is about to start its search.';
+
+// a short caption for what the annealing search is doing right now
+function foldNarration(temp, flash) {
+    if (flash) return { key: 'best', text: 'New best fold: another hydrophobic contact just got buried.' };
+    if (temp > 1.4) return { key: 'hot', text: 'Hot search: the chain flails and explores wildly.' };
+    if (temp > 0.5) return { key: 'cool', text: 'Cooling: the chain collapses to bury its H core.' };
+    return { key: 'cold', text: 'Cold: fine-tuning the last few contacts.' };
+}
+
 export default function ProteinFolding() {
     const canvasRef = useRef(null);
     const sparkRef = useRef(null);
     const paramsRef = useRef({ paused: false, speed: 3 });
     const pendingRef = useRef({ seq: SEQUENCES[0].hp, resetBest: true });
-    const statsRef = useRef({ energy: 0, best: 0, contacts: 0, temp: TMAX, sweeps: 0, len: 0, hCount: 0 });
+    const statsRef = useRef({ energy: 0, best: 0, contacts: 0, temp: TMAX, sweeps: 0, len: 0, hCount: 0, phase: 'hot', narration: FOLD_START_NARRATION });
 
     const [seqIdx, setSeqIdx] = useState(0);
     const [paused, setPaused] = useState(false);
     const [speed, setSpeed] = useState(3);
-    const [stats, setStats] = useState({ energy: 0, best: 0, contacts: 0, temp: TMAX, sweeps: 0, len: 20, hCount: 0 });
+    const [customSeq, setCustomSeq] = useState('');
+    const [customErr, setCustomErr] = useState(null);
+    const [stats, setStats] = useState({ energy: 0, best: 0, contacts: 0, temp: TMAX, sweeps: 0, len: 20, hCount: 0, phase: 'hot', narration: FOLD_START_NARRATION });
 
     useEffect(() => {
         paramsRef.current = { paused, speed };
@@ -71,6 +84,8 @@ export default function ProteinFolding() {
         let occ = new Map();
         let contacts = 0;
         let bestEnergy = 0;
+        let prevBest = 0;
+        let bestFlash = 0;
         let annealSweep = 0;
         let history = [];
 
@@ -120,6 +135,8 @@ export default function ProteinFolding() {
             annealSweep = 0;
             history = [];
             if (resetBest) bestEnergy = -contacts;
+            prevBest = bestEnergy;
+            bestFlash = 0;
             statsRef.current.len = n;
             statsRef.current.hCount = hc;
         }
@@ -353,6 +370,8 @@ export default function ProteinFolding() {
                 statsRef.current.best = bestEnergy;
                 statsRef.current.contacts = contacts;
                 statsRef.current.sweeps = Math.round(annealSweep);
+                if (bestEnergy < prevBest - 1e-9) { bestFlash = 12; prevBest = bestEnergy; }
+                if (bestFlash > 0) bestFlash -= 1;
                 history.push(-contacts);
                 if (history.length > 160) history.shift();
             }
@@ -363,6 +382,9 @@ export default function ProteinFolding() {
             session.sinceStats += 1;
             if (session.sinceStats >= 8) {
                 session.sinceStats = 0;
+                const nar = foldNarration(statsRef.current.temp, bestFlash > 0);
+                statsRef.current.phase = nar.key;
+                statsRef.current.narration = nar.text;
                 setStats({ ...statsRef.current });
             }
             session.rafId = requestAnimationFrame(frame);
@@ -393,7 +415,7 @@ export default function ProteinFolding() {
             }
             render();
             renderSpark();
-            setStats({ ...statsRef.current, energy: -contacts, best: bestEnergy, contacts, temp: TMIN, sweeps: ANNEAL_SWEEPS });
+            setStats({ ...statsRef.current, energy: -contacts, best: bestEnergy, contacts, temp: TMIN, sweeps: ANNEAL_SWEEPS, phase: 'cold', narration: 'Folded: the hydrophobic core is buried.' });
             return () => { canvas._fold = null; };
         }
 
@@ -425,10 +447,21 @@ export default function ProteinFolding() {
 
     function choosePreset(i) {
         setSeqIdx(i);
+        setCustomErr(null);
         canvasRef.current?._fold?.setSeq(SEQUENCES[i].hp, true);
     }
     function refold() {
         canvasRef.current?._fold?.refold();
+    }
+    // fold a visitor-supplied H/P sequence; the input already restricts to H and
+    // P, so we only gate on a sensible length
+    function foldCustom() {
+        const clean = customSeq.toUpperCase().replace(/[^HP]/g, '');
+        if (clean.length < 6) { setCustomErr('Use at least 6 letters (H or P).'); return; }
+        if (clean.length > 40) { setCustomErr('Keep it to 40 residues or fewer.'); return; }
+        setCustomErr(null);
+        setSeqIdx(-1);
+        canvasRef.current?._fold?.setSeq(clean, true);
     }
 
     const energyLabel = e => (e > 0 ? `+${e}` : `${e}`);
@@ -469,9 +502,32 @@ export default function ProteinFolding() {
                     </button>
                 </div>
 
+                <div className={styles.customRow}>
+                    <label className={styles.customLabel} htmlFor="hp-input">Fold your own:</label>
+                    <input
+                        id="hp-input"
+                        className={styles.customInput}
+                        type="text"
+                        placeholder="e.g. HHPPHPPHPH"
+                        value={customSeq}
+                        onChange={e => setCustomSeq(e.target.value.toUpperCase().replace(/[^HP]/g, '').slice(0, 40))}
+                        onKeyDown={e => { if (e.key === 'Enter') foldCustom(); }}
+                        aria-label="Custom H and P sequence"
+                        maxLength={40}
+                    />
+                    <button className={styles.pill} onClick={foldCustom}>Fold this</button>
+                    {customErr
+                        ? <span className={styles.customErr}>{customErr}</span>
+                        : <span className={styles.customHint}>H = water-fearing, P = water-loving</span>}
+                </div>
+
                 <div className={styles.lab}>
                     <div className={styles.stagePanel}>
                         <canvas ref={canvasRef} width={720} height={520} className={styles.canvas} aria-label="A protein chain folding on a lattice to minimize energy" />
+                        <div className={styles.narration} data-phase={stats.phase}>
+                            <span className={styles.narrationDot} aria-hidden="true" />
+                            <span className={styles.narrationText}>{stats.narration}</span>
+                        </div>
                     </div>
 
                     <div className={styles.side}>

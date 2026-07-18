@@ -34,11 +34,32 @@ export const metadata = {
 // Default is light; visitors keep whatever they last toggled.
 const themeInitScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='dark'&&t!=='light'){t='light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
 
+// Structured data so search engines render a rich result for the person.
+const personLd = JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: siteConfig.name,
+    jobTitle: siteConfig.title,
+    description: siteConfig.siteDescription,
+    url: siteConfig.siteUrl,
+    email: `mailto:${siteConfig.email}`,
+    address: { '@type': 'PostalAddress', addressLocality: siteConfig.location },
+    sameAs: [siteConfig.social.github, siteConfig.social.linkedin, siteConfig.social.twitter].filter(Boolean),
+    knowsAbout: [
+        'Machine Learning', 'Deep Learning', 'Large Language Models', 'Computer Vision',
+        'Retrieval-Augmented Generation', 'Natural Language Processing', 'MLOps',
+    ],
+});
+
 export default function RootLayout({ children }) {
     return (
         <html lang="en" className={`${bodyFont.variable} ${displayFont.variable}`} data-theme="light" suppressHydrationWarning>
             <body>
                 <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+                <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: personLd }} />
+                {siteConfig.analytics?.goatcounter && (
+                    <script data-goatcounter={siteConfig.analytics.goatcounter} async src="https://gc.zgo.at/count.js" />
+                )}
                 <ClientLayout>{children}</ClientLayout>
             </body>
         </html>

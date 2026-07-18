@@ -73,6 +73,15 @@ My work spans transformer fine-tuning, agentic AI systems, document intelligence
     ],
 
 
+    // Booking + analytics (optional; fill in to enable, otherwise hidden)
+    // Set to a cal.com/Calendly link to show a "Book a call" button in Contact.
+    bookingUrl: null,
+    analytics: {
+        // Privacy-friendly, cookieless GoatCounter. No cookie banner needed.
+        // Set to null to turn analytics off.
+        goatcounter: 'https://rs-03.goatcounter.com/count',
+    },
+
     // SEO
     siteUrl: 'https://rs-03.github.io',
     siteTitle: 'Rahul Sangamker | AI/ML Engineer',

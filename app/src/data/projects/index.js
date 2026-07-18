@@ -35,6 +35,7 @@ import hodgkinHuxley from './personal/hodgkin-huxley/config.js';
 import attentionLens from './personal/attention-lens/config.js';
 import evolution from './personal/evolution/config.js';
 import tokenizer from './personal/tokenizer/config.js';
+import diffusion from './personal/diffusion/config.js';
 
 /**
  * All projects combined with defaults applied
@@ -69,6 +70,7 @@ const allProjects = [
     attentionLens,
     evolution,
     tokenizer,
+    diffusion,
 ].map(project => ({
     ...projectDefaults,
     ...project,

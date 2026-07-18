@@ -11,6 +11,7 @@ import {
     GitHubActivity,
     BeyondCode,
     Contact,
+    CTABand,
 } from '@/components/sections';
 
 /**
@@ -25,6 +26,7 @@ export default function HomePage() {
             <Stats />
             <LiveDemosTeaser />
             <FeaturedProjects />
+            <CTABand />
             <Services />
             <HowIWork />
             <Testimonials />

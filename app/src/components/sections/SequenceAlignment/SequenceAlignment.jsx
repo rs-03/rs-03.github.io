@@ -89,16 +89,19 @@ export default function SequenceAlignment() {
     const paramsRef = useRef({});
 
     const [presetIdx, setPresetIdx] = useState(0);
+    const [seqA, setSeqA] = useState(PRESETS[0].a);
+    const [seqB, setSeqB] = useState(PRESETS[0].b);
     const [mode, setMode] = useState('local');
     const [match, setMatch] = useState(3);
     const [mismatch, setMismatch] = useState(-3);
     const [gap, setGap] = useState(-2);
 
-    // the DP is a pure function of the inputs, so derive it during render
+    // the DP is a pure function of the two sequences, so derive it during render.
+    // The input boxes are the single source of truth; presets just fill them.
     const res = useMemo(() => {
-        const { a, b } = PRESETS[presetIdx];
+        const a = seqA, b = seqB;
         return { ...align(a, b, mode, match, mismatch, gap), a, b, mode };
-    }, [presetIdx, mode, match, mismatch, gap]);
+    }, [seqA, seqB, mode, match, mismatch, gap]);
 
     // publish the computed result to the animation loop and restart the reveal
     useEffect(() => {
@@ -254,6 +257,16 @@ export default function SequenceAlignment() {
         revealRef.current = { fill: 0, phase: 0, trace: 0, hold: 0 };
     }
 
+    function choosePreset(i) {
+        setPresetIdx(i);
+        setSeqA(PRESETS[i].a);
+        setSeqB(PRESETS[i].b);
+    }
+    // sequences are letters only, capped so the matrix stays legible and fast
+    const clean = v => v.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 18);
+    function editA(v) { setSeqA(clean(v)); setPresetIdx(-1); }
+    function editB(v) { setSeqB(clean(v)); setPresetIdx(-1); }
+
     const modeName = mode === 'local' ? 'Smith-Waterman (local)' : 'Needleman-Wunsch (global)';
 
     return (
@@ -276,7 +289,7 @@ export default function SequenceAlignment() {
                         <button
                             key={p.name}
                             className={`${styles.pill} ${presetIdx === i ? styles.pillActive : ''}`}
-                            onClick={() => setPresetIdx(i)}
+                            onClick={() => choosePreset(i)}
                         >
                             {p.name}
                         </button>
@@ -285,6 +298,36 @@ export default function SequenceAlignment() {
                     <button className={`${styles.pill} ${mode === 'local' ? styles.pillActive : ''}`} onClick={() => setMode('local')}>Local</button>
                     <button className={`${styles.pill} ${mode === 'global' ? styles.pillActive : ''}`} onClick={() => setMode('global')}>Global</button>
                     <button className={styles.pill} onClick={replay}>Replay</button>
+                </div>
+
+                <div className={styles.seqInputs}>
+                    <label className={styles.seqField}>
+                        <span className={styles.seqTag} style={{ color: '#f6a723' }}>A</span>
+                        <input
+                            className={styles.seqInput}
+                            type="text"
+                            value={seqA}
+                            onChange={e => editA(e.target.value)}
+                            maxLength={18}
+                            spellCheck={false}
+                            aria-label="Sequence A"
+                            placeholder="type a sequence"
+                        />
+                    </label>
+                    <label className={styles.seqField}>
+                        <span className={styles.seqTag} style={{ color: '#8cdcff' }}>B</span>
+                        <input
+                            className={styles.seqInput}
+                            type="text"
+                            value={seqB}
+                            onChange={e => editB(e.target.value)}
+                            maxLength={18}
+                            spellCheck={false}
+                            aria-label="Sequence B"
+                            placeholder="type a sequence"
+                        />
+                    </label>
+                    <span className={styles.seqHint}>Paste your own · letters only, up to 18 each</span>
                 </div>
 
                 <div className={styles.lab}>

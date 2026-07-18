@@ -63,18 +63,30 @@ const COL_SEG = 'rgba(157,141,240,0.42)';
 const COL_FIX = 'rgba(246,167,35,0.6)';
 const COL_LOST = 'rgba(120,139,212,0.26)';
 
+const EVO_START_NARRATION = 'Pure drift: with no selection, chance alone decides each fate.';
+
+// a short caption contrasting the two forces at the current settings
+function evoNarration(s, mu) {
+    if (mu > 0.0005 && Math.abs(s) < 0.005) return { key: 'mut', text: 'Mutation keeps feeding variation, so populations rarely fix for good.' };
+    if (s >= 0.1) return { key: 'strong', text: 'Strong selection: the favored allele sweeps toward fixation.' };
+    if (s > 0.005) return { key: 'weak', text: 'Weak selection nudges the odds, but drift still scatters the outcomes.' };
+    if (s < -0.005) return { key: 'against', text: 'Selection pushes against this allele, yet drift can still fix it by chance.' };
+    return { key: 'drift', text: 'Pure drift: with no selection, chance alone decides each fate.' };
+}
+
 export default function Evolution() {
     const canvasRef = useRef(null);
     const paramsRef = useRef({ N: PRESETS[0].N, s: PRESETS[0].s, mu: PRESETS[0].mu, p0: PRESETS[0].p0 });
     const restartRef = useRef(true);
-    const statsRef = useRef({ gen: 0, fixed: 0, lost: 0, seg: R, meanP: PRESETS[0].p0, het: 0 });
+    const selectedRef = useRef(-1);
+    const statsRef = useRef({ gen: 0, fixed: 0, lost: 0, seg: R, meanP: PRESETS[0].p0, het: 0, selIdx: -1, selP: -1, selFate: 'none', phase: 'drift', narration: EVO_START_NARRATION });
 
     const [presetName, setPresetName] = useState('Pure drift');
     const [N, setN] = useState(PRESETS[0].N);
     const [s, setS] = useState(PRESETS[0].s);
     const [mu, setMu] = useState(PRESETS[0].mu);
     const [p0, setP0] = useState(PRESETS[0].p0);
-    const [stats, setStats] = useState({ gen: 0, fixed: 0, lost: 0, seg: R, meanP: PRESETS[0].p0, het: 0 });
+    const [stats, setStats] = useState({ gen: 0, fixed: 0, lost: 0, seg: R, meanP: PRESETS[0].p0, het: 0, selIdx: -1, selP: -1, selFate: 'none', phase: 'drift', narration: EVO_START_NARRATION });
 
     useEffect(() => {
         paramsRef.current = { N, s, mu, p0 };
@@ -120,9 +132,18 @@ export default function Evolution() {
                 sum += p;
                 het += 2 * p * (1 - p);
             }
+            const { s: sc, mu: m } = paramsRef.current;
+            const sel = selectedRef.current;
+            let selP = -1, selFate = 'none';
+            if (sel >= 0 && sel < R) {
+                selP = pops[sel];
+                selFate = selP >= 1 ? 'fixed' : selP <= 0 ? 'lost' : 'still segregating';
+            }
+            const nar = evoNarration(sc, m);
             statsRef.current = {
                 gen: generation, fixed, lost, seg: R - fixed - lost,
                 meanP: sum / R, het: het / R,
+                selIdx: sel, selP, selFate, phase: nar.key, narration: nar.text,
             };
         }
 
@@ -143,6 +164,22 @@ export default function Evolution() {
                     sumFinal += p;
                 }
                 return { meanFinalP: sumFinal / reps, fixedFraction: fixed / reps, lostFraction: lost / reps, inRange, finite };
+            },
+            // nearest trajectory to a click, in data space; -1 if the click is far
+            pick: (xC, yC) => {
+                const W = canvas.width, H = canvas.height;
+                const padL = 44, padB = 28, padT = 14, padR = 14;
+                const plotW = W - padL - padR, plotH = H - padT - padB;
+                const g = Math.round(((xC - padL) / plotW) * GMAX);
+                const gg = Math.max(0, Math.min(hist[0].length - 1, g));
+                const targetP = 1 - (yC - padT) / plotH;
+                let best = -1, bestD = Infinity;
+                for (let r = 0; r < R; r++) {
+                    const p = hist[r][gg] ?? pops[r];
+                    const d = Math.abs(p - targetP);
+                    if (d < bestD) { bestD = d; best = r; }
+                }
+                return bestD < 0.12 ? best : -1;
             },
         };
 
@@ -179,8 +216,11 @@ export default function Evolution() {
                 order.push({ r, tier: p >= 1 ? 2 : p <= 0 ? 0 : 1 });
             }
             order.sort((a, b) => a.tier - b.tier);
+            const sel = selectedRef.current;
             for (const { r, tier } of order) {
+                if (sel >= 0 && r === sel) continue; // the followed lineage is drawn on top below
                 const h = hist[r];
+                ctx.globalAlpha = sel >= 0 ? 0.16 : 1;
                 ctx.beginPath();
                 for (let g = 0; g < h.length; g++) {
                     const x = xOf(g), y = yOf(h[g]);
@@ -190,6 +230,7 @@ export default function Evolution() {
                 ctx.lineWidth = tier === 1 ? 1.4 : 1.1;
                 ctx.stroke();
             }
+            ctx.globalAlpha = 1;
 
             // mean frequency line
             const len = hist[0].length;
@@ -203,6 +244,26 @@ export default function Evolution() {
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
             ctx.lineWidth = 2;
             ctx.stroke();
+
+            // the followed lineage, bright and on top, with a tip marker
+            if (sel >= 0 && sel < R) {
+                const hs = hist[sel];
+                ctx.save();
+                ctx.shadowColor = '#8cdcff';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                for (let g = 0; g < hs.length; g++) {
+                    const x = xOf(g), y = yOf(hs[g]);
+                    if (g === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.strokeStyle = '#8cdcff';
+                ctx.lineWidth = 2.6;
+                ctx.stroke();
+                const gEnd = hs.length - 1;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath(); ctx.arc(xOf(gEnd), yOf(hs[gEnd]), 4, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+            }
         }
 
         const session = { rafId: 0, running: true, sinceStats: 0 };
@@ -269,8 +330,25 @@ export default function Evolution() {
     function choosePreset(p) {
         setPresetName(p.name);
         setN(p.N); setS(p.s); setMu(p.mu); setP0(p.p0);
+        selectedRef.current = -1;
     }
     function restart() { restartRef.current = true; }
+
+    // click a trajectory to follow that population's lineage; a click in open
+    // space (far from any line) clears the selection
+    function onCanvasPointerDown(e) {
+        const canvas = canvasRef.current;
+        if (!canvas?._wf?.pick) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+        const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+        selectedRef.current = canvas._wf.pick(x, y);
+    }
+
+    const followSuffix = stats.selIdx >= 0 && stats.selP >= 0
+        ? ` Following population ${stats.selIdx + 1}: now at ${Math.round(stats.selP * 100)}%, ${stats.selFate}.`
+        : '';
+    const narrationFull = stats.narration + followSuffix;
 
     return (
         <section className={`section ${styles.evo}`} id="evolution">
@@ -301,9 +379,25 @@ export default function Evolution() {
                     <button className={styles.pill} onClick={restart}>Restart</button>
                 </div>
 
+                <p className={styles.tip}>
+                    Tip: click any trajectory to follow that one population&apos;s lineage, and watch
+                    where chance takes it. Click empty space to let go.
+                </p>
+
                 <div className={styles.lab}>
                     <div className={styles.stagePanel}>
-                        <canvas ref={canvasRef} width={720} height={460} className={styles.canvas} aria-label="Allele frequency trajectories of many populations over generations" />
+                        <canvas
+                            ref={canvasRef}
+                            width={720}
+                            height={460}
+                            className={styles.canvas}
+                            onPointerDown={onCanvasPointerDown}
+                            aria-label="Allele frequency trajectories of many populations over generations. Click a line to follow one lineage."
+                        />
+                        <div className={styles.narration} data-phase={stats.phase}>
+                            <span className={styles.narrationDot} aria-hidden="true" />
+                            <span className={styles.narrationText}>{narrationFull}</span>
+                        </div>
                     </div>
 
                     <div className={styles.side}>
