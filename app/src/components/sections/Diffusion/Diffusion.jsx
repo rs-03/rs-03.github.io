@@ -154,11 +154,12 @@ export default function Diffusion() {
     const [presetIdx, setPresetIdx] = useState(0);
     const [paused, setPaused] = useState(false);
     const [speed, setSpeed] = useState(1);
+    const [showField, setShowField] = useState(true);
     const [stats, setStats] = useState({ step: T, spread: 1, progress: 0, particles: 0 });
 
     useEffect(() => {
-        paramsRef.current = { paused, speed };
-    }, [paused, speed]);
+        paramsRef.current = { paused, speed, showField };
+    }, [paused, speed, showField]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -285,6 +286,49 @@ export default function Diffusion() {
                 ctx.beginPath();
                 ctx.arc(sx(target.tx[k]), sy(target.ty[k]), 1.6, 0, Math.PI * 2);
                 ctx.fill();
+            }
+
+            // the score field: the exact vector field grad log p_t(x) that every
+            // particle is following, sampled on a grid. Arrows point the way the
+            // denoiser pushes, and sharpen toward the shape as the noise clears.
+            if (paramsRef.current.showField) {
+                const abT = abar[t];
+                const oneMinusAbT = Math.max(1 - abT, EPS);
+                const sqrtAbT = Math.sqrt(abT);
+                const invScale = 1 / (2 * oneMinusAbT);
+                const tx = target.tx, ty = target.ty, m = target.m, w = wScratch;
+                const COLS = 20, ROWS = 15;
+                const cellPx = (2 * R * sc) / COLS;
+                const len = cellPx * 0.42;
+                ctx.lineWidth = 1;
+                for (let gyi = 0; gyi < ROWS; gyi++) {
+                    for (let gxi = 0; gxi < COLS; gxi++) {
+                        const x = -R + ((gxi + 0.5) / COLS) * 2 * R;
+                        const y = R - ((gyi + 0.5) / ROWS) * 2 * R;
+                        let maxLog = -Infinity;
+                        for (let k = 0; k < m; k++) {
+                            const dx = x - sqrtAbT * tx[k], dy = y - sqrtAbT * ty[k];
+                            const lg = -(dx * dx + dy * dy) * invScale;
+                            w[k] = lg; if (lg > maxLog) maxLog = lg;
+                        }
+                        let sum = 0, ex = 0, ey = 0;
+                        for (let k = 0; k < m; k++) { const e = Math.exp(w[k] - maxLog); sum += e; ex += e * tx[k]; ey += e * ty[k]; }
+                        const vX = (sqrtAbT * (ex / sum) - x) / oneMinusAbT;
+                        const vY = (sqrtAbT * (ey / sum) - y) / oneMinusAbT;
+                        const mag = Math.hypot(vX, vY) || 1e-9;
+                        const ux = vX / mag, uy = vY / mag;
+                        const x0 = sx(x), y0 = sy(y);
+                        const x1 = x0 + ux * len, y1 = y0 - uy * len; // screen y is flipped
+                        const a = Math.min(0.45, 0.06 + Math.tanh(mag * 0.12) * 0.4);
+                        ctx.strokeStyle = `rgba(120, 175, 255, ${a})`;
+                        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+                        const ang = Math.atan2(-uy, ux), ah = len * 0.38;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1); ctx.lineTo(x1 - ah * Math.cos(ang - 0.5), y1 - ah * Math.sin(ang - 0.5));
+                        ctx.moveTo(x1, y1); ctx.lineTo(x1 - ah * Math.cos(ang + 0.5), y1 - ah * Math.sin(ang + 0.5));
+                        ctx.stroke();
+                    }
+                }
             }
 
             // particles, drawn additively so overlap on the shape glows bright
@@ -496,6 +540,13 @@ export default function Diffusion() {
                     >
                         {speed === 2 ? 'Fast' : 'Slow'}
                     </button>
+                    <button
+                        className={`${styles.pill} ${showField ? styles.pillActive : ''}`}
+                        onClick={() => setShowField(v => !v)}
+                        title="Show the score field the particles are following"
+                    >
+                        {showField ? 'Field on' : 'Field off'}
+                    </button>
                 </div>
 
                 <div className={styles.lab}>
@@ -539,6 +590,7 @@ export default function Diffusion() {
                         <div className={styles.legend}>
                             <span className={styles.legendItem}><i style={{ background: PARTICLE }} /> denoising particles</span>
                             <span className={styles.legendItem}><i style={{ background: '#9d8df0' }} /> target the noise is pulled toward</span>
+                            <span className={styles.legendItem}><i style={{ background: 'rgb(120,175,255)' }} /> score field: where the denoiser pushes</span>
                         </div>
 
                         <p className={styles.meta}>
