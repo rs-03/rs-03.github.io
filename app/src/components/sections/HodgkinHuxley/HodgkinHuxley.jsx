@@ -97,6 +97,7 @@ const REST_NARRATION = 'At rest near -65 mV. Inject current to cross threshold.'
 
 export default function HodgkinHuxley() {
     const canvasRef = useRef(null);
+    const phaseRef = useRef(null);
     const paramsRef = useRef({ I: 0 });
     const pulseRef = useRef({ remaining: 0, amp: 20 });
     const injectRef = useRef({ x: 0, y: 0, life: 0 });
@@ -268,6 +269,47 @@ export default function HodgkinHuxley() {
             ctx.fillStyle = COL_N; ctx.fillText('n K open', 380, gTop - 12);
         }
 
+        // phase plane: the trajectory in state space (V against the K gate n).
+        // A spike is a loop, rest is a point; it is the dynamical-systems view of
+        // the same four equations.
+        function drawPhase() {
+            const pc = phaseRef.current;
+            if (!pc) return;
+            const pctx = pc.getContext('2d');
+            const W = pc.width, H = pc.height;
+            pctx.fillStyle = '#101022';
+            pctx.fillRect(0, 0, W, H);
+            const padL = 30, padB = 22, padT = 10, padR = 10;
+            const plotW = W - padL - padR, plotH = H - padT - padB;
+            const xOf = v => padL + ((v - TRACE_VMIN) / (TRACE_VMAX - TRACE_VMIN)) * plotW;
+            const yOf = n => padT + (1 - n) * plotH;
+            pctx.strokeStyle = 'rgba(230,232,255,0.14)';
+            pctx.lineWidth = 1;
+            pctx.strokeRect(padL, padT, plotW, plotH);
+            pctx.lineWidth = 1.5;
+            let px = null, py = null;
+            for (let i = 0; i < L; i++) {
+                const idx = (head + i) % L;
+                const x = xOf(vBuf[idx]), y = yOf(nBuf[idx]);
+                if (px !== null) {
+                    const a = i / L;
+                    pctx.strokeStyle = `rgba(140,220,255,${0.04 + a * 0.5})`;
+                    pctx.beginPath(); pctx.moveTo(px, py); pctx.lineTo(x, y); pctx.stroke();
+                }
+                px = x; py = y;
+            }
+            pctx.fillStyle = '#ffd27a';
+            pctx.beginPath(); pctx.arc(xOf(s.V), yOf(s.n), 3, 0, Math.PI * 2); pctx.fill();
+            pctx.fillStyle = 'rgba(230,232,255,0.5)';
+            pctx.font = '10px ui-monospace, monospace';
+            pctx.textAlign = 'center';
+            pctx.fillText('V (mV)', W / 2, H - 6);
+            pctx.save();
+            pctx.translate(9, H / 2); pctx.rotate(-Math.PI / 2);
+            pctx.fillText('n (K gate)', 0, 0);
+            pctx.restore();
+        }
+
         const session = { rafId: 0, running: true, sinceStats: 0 };
         function frame() {
             if (!session.running) return;
@@ -278,6 +320,7 @@ export default function HodgkinHuxley() {
             phaseKey = nar.key;
             if (injectRef.current.life > 0) injectRef.current.life -= 1;
             draw();
+            drawPhase();
             session.sinceStats += 1;
             if (session.sinceStats >= 6) {
                 session.sinceStats = 0;
@@ -293,6 +336,7 @@ export default function HodgkinHuxley() {
             for (let i = 0; i < L; i++) pushSample();
             phaseKey = 'rest';
             draw();
+            drawPhase();
             const nar = narrate(s.V, 0, s.m);
             setStats({ V: s.V, spikes: spikeCount, rateHz: 0, phase: nar.key, narration: nar.text });
         } else {
@@ -459,6 +503,18 @@ export default function HodgkinHuxley() {
                             <span className={styles.legendItem}><i style={{ background: COL_M }} /> m · Na activation</span>
                             <span className={styles.legendItem}><i style={{ background: COL_H }} /> h · Na inactivation</span>
                             <span className={styles.legendItem}><i style={{ background: COL_N }} /> n · K activation</span>
+                        </div>
+
+                        <div className={styles.phaseCard}>
+                            <span className={styles.phaseLabel}>State space · V vs n</span>
+                            <canvas
+                                ref={phaseRef}
+                                width={280}
+                                height={200}
+                                className={styles.phaseCanvas}
+                                aria-label="Phase plane of membrane voltage against the potassium gating variable"
+                            />
+                            <span className={styles.phaseHint}>each spike traces a loop, rest is a point</span>
                         </div>
                     </div>
                 </div>
