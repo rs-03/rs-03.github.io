@@ -124,6 +124,31 @@
     font-variant-numeric: tabular-nums;
 }
 
+.curveWrap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+}
+
+.curveLabel {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(230, 232, 255, 0.5);
+}
+
+.curveCanvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 340 / 130;
+    display: block;
+    border-radius: var(--radius-md);
+    background: #101022;
+    border: 1px solid var(--color-border);
+}
+
 .mergeLog {
     display: flex;
     flex-direction: column;
