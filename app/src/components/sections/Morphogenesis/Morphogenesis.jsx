@@ -222,6 +222,7 @@ export default function Morphogenesis() {
     const paramsRef = useRef({ f: PRESETS[0].f, k: PRESETS[0].k, palette: 0, playing: true });
     const splatQueueRef = useRef([]);
     const pointerRef = useRef({ down: false, last: null });
+    const mapRef = useRef(null);
 
     const [presetIdx, setPresetIdx] = useState(0);
     const [feed, setFeed] = useState(PRESETS[0].f);
@@ -234,6 +235,44 @@ export default function Morphogenesis() {
     useEffect(() => {
         paramsRef.current = { f: feed, k: kill, palette, playing };
     }, [feed, kill, palette, playing]);
+
+    // parameter-space map: where the current feed and kill sit among the named
+    // regimes on Pearson's Gray-Scott phase diagram.
+    useEffect(() => {
+        const c = mapRef.current;
+        if (!c) return;
+        const ctx = c.getContext('2d');
+        const W = c.width, H = c.height;
+        ctx.fillStyle = '#101022';
+        ctx.fillRect(0, 0, W, H);
+        const padL = 34, padB = 24, padT = 12, padR = 12;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const K0 = 0.045, K1 = 0.07, F0 = 0.01, F1 = 0.09;
+        const xOf = k => padL + ((k - K0) / (K1 - K0)) * plotW;
+        const yOf = f => padT + (1 - (f - F0) / (F1 - F0)) * plotH;
+        ctx.strokeStyle = 'rgba(230,232,255,0.14)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(padL, padT, plotW, plotH);
+        ctx.fillStyle = 'rgba(230,232,255,0.5)';
+        ctx.font = '10px ui-monospace, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('kill rate k', W / 2, H - 5);
+        ctx.save();
+        ctx.translate(10, H / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('feed rate F', 0, 0);
+        ctx.restore();
+        for (const p of PRESETS) {
+            ctx.fillStyle = 'rgba(157,141,240,0.85)';
+            ctx.beginPath(); ctx.arc(xOf(p.k), yOf(p.f), 3, 0, Math.PI * 2); ctx.fill();
+        }
+        const cx = xOf(kill), cy = yOf(feed);
+        ctx.strokeStyle = '#ffd27a';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 5.5, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = '#ffd27a';
+        ctx.beginPath(); ctx.arc(cx, cy, 2, 0, Math.PI * 2); ctx.fill();
+    }, [feed, kill]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -554,6 +593,18 @@ export default function Morphogenesis() {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className={styles.mapWrap}>
+                            <span className={styles.mapLabel}>Where you are in Gray-Scott space</span>
+                            <canvas
+                                ref={mapRef}
+                                width={280}
+                                height={200}
+                                className={styles.mapCanvas}
+                                aria-label="Feed versus kill parameter map with the current point among the named pattern regimes"
+                            />
+                            <span className={styles.mapHint}>purple: named presets · amber ring: your F and k (Pearson, 1993)</span>
                         </div>
                     </>
                 ) : (
