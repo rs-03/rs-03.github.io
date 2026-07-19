@@ -338,9 +338,10 @@ export default function AskPortfolio() {
                         {passages.length > 0 && (
                             <div className={styles.results}>
                                 <span className={styles.sourcesLabel}>{answer || genStatus === 'generating' ? 'Sources' : 'Top matches'}</span>
-                                {passages.map(({ chunk, score }) => (
+                                {passages.map(({ chunk, score }, i) => (
                                     <div key={chunk.id} className={styles.result}>
                                         <div className={styles.resultHeader}>
+                                            <span className={styles.sourceNum}>[{i + 1}]</span>
                                             <span className={styles.kind}>{KIND_LABELS[chunk.kind]}</span>
                                             <span className={styles.resultTitle}>{chunk.title}</span>
                                             <span className={styles.score} title="Cosine similarity">
