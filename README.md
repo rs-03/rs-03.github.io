@@ -1,6 +1,6 @@
 # Portfolio Website
 
-Personal portfolio for Rahul Sangamker, AI/ML Engineer. Built with Next.js (static export), deployed to GitHub Pages.
+Personal portfolio for Rahul Sangamker, AI/ML Engineer. Built with Next.js (static export), deployed to GitHub Pages. 
 
 **Live site:** https://rs-03.github.io
 
